@@ -14,7 +14,7 @@ export const users = pgTable("users", {
     email:          varchar("email", {length: 50}).notNull(),
     firstname:      varchar("firstname", {length: 50}).notNull(),
     lastname:       varchar("lastname", {length: 50}).notNull(),
-    fathername:     varchar("lastname", {length: 50}),
+    fathername:     varchar("fathername", {length: 50}),
     role:           userRoleEnum("role").notNull().default("teacher"),
     passwordHash:       text("passwordHash").notNull(),
     passwordShifr:  text("passwordShifr").notNull(),

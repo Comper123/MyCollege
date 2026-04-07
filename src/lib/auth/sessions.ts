@@ -14,19 +14,20 @@ export async function createSession(params: {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 дней
 
     // Вставляем сессию
-    await db.insert(sessions).values({
+    const newtoken = await db.insert(sessions).values({
         userId: params.userId,
-        tokenHash: hashToken(params.token),
+        tokenHash: await hashToken(params.token),
         userAgent: params.userAgent,
         ip: params.ip,
         expiresAt
-    })
+    }).returning();
+    console.log(newtoken[0].tokenHash)
 }
 
 
 // Найти сессию по токену и убедиться что она не истекла
 export async function findSession(token: string){
-    const tokenHash = hashToken(token);
+    const tokenHash = await hashToken(token);
     const result = await db.query.sessions.findFirst({
         where: and(
             eq(sessions.tokenHash, tokenHash),
@@ -41,9 +42,11 @@ export async function findSession(token: string){
 
 // Удалить одну сессию (выход с текущего устройства)
 export async function deleteSession(token: string) {
-  await db
-    .delete(sessions)
-    .where(eq(sessions.tokenHash, hashToken(token)))
+    const th = await hashToken(token);
+    console.log(th, token)
+    await db
+        .delete(sessions)
+        .where(eq(sessions.tokenHash, th))
 }
 
 

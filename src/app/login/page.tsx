@@ -3,31 +3,45 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("teacher");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { refetchUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
-    setTimeout(() => {
-      if (email && password) {
-        console.log("Вход выполнен:", { email, role });
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          password
+        })
+      })
+      if (resp.ok){
         router.push("/dashboard");
+        await refetchUser();
       } else {
-        setError("Неверный логин или пароль");
+        const data = await resp.json();
+        setError(data.error);
       }
-      setIsLoading(false);
-    }, 1000);
+    } catch (error) {
+      console.log(error);
+      setError("Ошибка авторизации");
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500)
+    }
   };
-
+  
   return (
     <main className="">
       {/* Фоновый слой */}

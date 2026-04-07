@@ -1,9 +1,11 @@
+// export const runtime = 'nodejs'; 
+
 import { SignJWT, jwtVerify, JWTPayload } from 'jose'
-import { createHash }         from 'crypto'
 
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 const EXPIRES_IN = '7d'
+// const EXPIRES_IN = '10s'
 
 export interface SessionPayload  {
     userId:    string;
@@ -35,6 +37,10 @@ export async function verifyToken(token: string): Promise<SessionPayload  | null
 }
 
 // Хэш токена для хранения в БД
-export function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex')
+export async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(token)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }

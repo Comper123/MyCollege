@@ -1,15 +1,11 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
 import PublicHeader from "./PublicHeader";
 import PrivateHeader from "./PrivateHeader";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ConditionalHeader() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return null; // или скелетон
-  }
+  const { isAuthenticated } = useAuth();
 
   return isAuthenticated ? <PrivateHeader /> : <PublicHeader />;
 }

@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
   })
 
   if (!user) {
-    return NextResponse.json({ error: 'Неверный email или пароль' }, { status: 401 })
+    return NextResponse.json({ error: 'Пользователя с таким email не существует' }, { status: 401 })
   }
 
   // 2. Проверить пароль
   const isValid = await bcrypt.compare(password, user.passwordHash)
   if (!isValid) {
-    return NextResponse.json({ error: 'Неверный email или пароль' }, { status: 401 })
+    return NextResponse.json({ error: 'Некорректный пароль' }, { status: 401 })
   }
 
   // 3. Проверить что аккаунт активирован
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     userId:    user.id,
     role:      user.role,
   })
-
+  console.log(token)
   // 5. Сохранить сессию в БД
   await createSession({
     userId:    user.id,

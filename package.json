@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:update": "drizzle-kit generate && drizzle-kit migrate && drizzle-kit push"
+    "db:update": "drizzle-kit generate && drizzle-kit migrate && drizzle-kit push",
+    "create-admin": "npx tsx src/scripts/create-admin.ts"
   },
   "dependencies": {
     "autoprefixer": "^10.4.27",
@@ -38,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
