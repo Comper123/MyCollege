@@ -1,4 +1,3 @@
-// contexts/AuthContext.tsx
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
@@ -30,12 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Функция для получения текущего пользователя с сервера
   const fetchCurrentUser = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/auth/me', {
         method: 'GET',
-        credentials: 'include', // Важно для отправки cookies
+        credentials: 'include',
+        cache: 'no-store'
       });
       
       if (response.ok) {
@@ -50,72 +50,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Error fetching user:", error);
       setUser(null);
       return null;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // Загрузка пользователя при монтировании
+  // Только один useEffect
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadUser = async () => {
-      if (!isMounted) return;
-      setIsLoading(true);
-      
-      try {
-        await fetchCurrentUser();
-      } catch (error) {
-        console.error("Error loading user:", error);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-    
-    loadUser();
-    
-    return () => {
-      isMounted = false;
-    };
+    fetchCurrentUser();
   }, [fetchCurrentUser]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
-    
     try {
-      const response = await fetch('/api/auth/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
-      
-      if (response.ok) {
-        setUser(null);
-        router.push('/login');
-      }
     } catch (error) {
       console.error("Logout error:", error);
-      // Даже если ошибка, очищаем локальное состояние
-      setUser(null);
-      router.push('/login');
     } finally {
+      setUser(null);
       setIsLoading(false);
+      router.push('/login');
     }
   }, [router]);
 
   const refetchUser = useCallback(async () => {
     await fetchCurrentUser();
   }, [fetchCurrentUser]);
-
+  console.log('render:', { user, isLoading, isAuthenticated: !!user });
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isAuthenticated: !!user, 
-        isLoading, 
-        logout,
-        refetchUser
-      }}
-    >
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, logout, refetchUser }}>
       {children}
     </AuthContext.Provider>
   );

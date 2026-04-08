@@ -3,7 +3,7 @@ import { verifyToken }  from './lib/auth/tokens'
 
 // Какие пути защищать
 const PROTECTED = ['/dashboard', '/api/equipment', '/api/rooms']
-const AUTH_ONLY  = ['/login'] // редиректить если уже вошёл
+const AUTH_ONLY  = ['/login', '/'] // редиректить если уже вошёл
 
 
 export async function middleware(req: NextRequest) {
@@ -46,5 +46,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/equipment/:path*', '/api/rooms/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/api/equipment/:path*', '/api/rooms/:path*', '/login', '/'],
 }

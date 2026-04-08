@@ -26,7 +26,7 @@ export default function PrivateHeader() {
   const getRoleColor = () => {
     switch (user?.role) {
       case "admin": return "text-[#603EF9] dark:text-[#b5a8ff]";
-      case "lab": return "text-[#1d9e75] dark:text-[#6de0b8]";
+      case "laborant": return "text-[#1d9e75] dark:text-[#6de0b8]";
       case "teacher": return "text-[#ba7517] dark:text-[#ffc15e]";
       default: return "";
     }
@@ -35,7 +35,7 @@ export default function PrivateHeader() {
   const getRoleName = () => {
     switch (user?.role) {
       case "admin": return "Администратор";
-      case "lab": return "Лаборант";
+      case "laborant": return "Лаборант";
       case "teacher": return "Преподаватель";
       default: return "";
     }
@@ -49,23 +49,6 @@ export default function PrivateHeader() {
       </Link>
 
       <div className="hidden md:flex items-center gap-6">
-        <Link href="/dashboard" className="text-sm text-gray-600 dark:text-white/65 hover:text-gray-900 dark:hover:text-white transition-colors">
-          Панель
-        </Link>
-        <Link href="/equipment" className="text-sm text-gray-600 dark:text-white/65 hover:text-gray-900 dark:hover:text-white transition-colors">
-          Оборудование
-        </Link>
-        <Link href="/rooms" className="text-sm text-gray-600 dark:text-white/65 hover:text-gray-900 dark:hover:text-white transition-colors">
-          Кабинеты
-        </Link>
-        {user?.role === "admin" && (
-          <Link href="/users" className="text-sm text-gray-600 dark:text-white/65 hover:text-gray-900 dark:hover:text-white transition-colors">
-            Пользователи
-          </Link>
-        )}
-        <Link href="/reports" className="text-sm text-gray-600 dark:text-white/65 hover:text-gray-900 dark:hover:text-white transition-colors">
-          Отчёты
-        </Link>
       </div>
 
       <div className="flex items-center gap-4">

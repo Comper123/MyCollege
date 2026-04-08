@@ -9,7 +9,7 @@ const navItems = [
   {
     href: "/dashboard",
     exact: true,
-    label: "Карта",
+    label: "Панель",
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
