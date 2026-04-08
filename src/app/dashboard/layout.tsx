@@ -41,7 +41,7 @@ const navItems = [
     ),
   },
   {
-    href: "/dashboard/tasks",
+    href: "/dashboard/requests",
     label: "Заявки",
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -66,7 +66,7 @@ const navItems = [
   {
     href: "/dashboard/users",
     label: "Пользователи",
-    adminOnly: true,
+    accessRoles: ["admin"],
     icon: (
       <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -82,26 +82,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const getRoleLabel = () => {
-    switch (user?.role) {
-      case "admin": return "Администратор";
-      case "laborant": return "Лаборант";
-      case "teacher": return "Преподаватель";
-      default: return "";
-    }
-  };
-
-  const getRoleColor = () => {
-    switch (user?.role) {
-      case "admin": return { bg: "#EEEDFE", text: "#534AB7" };
-      case "laborant": return { bg: "#E1F5EE", text: "#0F6E56" };
-      case "teacher": return { bg: "#FAEEDA", text: "#854F0B" };
-      default: return { bg: "#F1EFE8", text: "#5F5E5A" };
-    }
-  };
-
-  const roleColor = getRoleColor();
-
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50 dark:bg-[#0c0b18] pt-[16px]">
       {/* Sidebar */}
@@ -110,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Navigation */}
         <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto">
           {navItems.map((item) => {
-            if (item.adminOnly && user?.role !== "admin") return null;
+            if (item.accessRoles && !item.accessRoles?.includes(user?.role || '')) return null;
             const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
               <Link

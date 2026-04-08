@@ -2,11 +2,13 @@ import { relations } from "drizzle-orm";
 import { boolean, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 
+
+// ^ Система авторизации
 export const userRoleEnum = pgEnum("userRole", [
     "admin",
     "laborant",
     "teacher"
-])
+]);
 
 export const users = pgTable("users", {
     id:             uuid("id").primaryKey().defaultRandom(),
@@ -45,6 +47,14 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 }))
 
 export type UserRole = typeof userRoleEnum.enumValues[number];
-
 export type User     = typeof users.$inferSelect;
 export type Session  = typeof sessions.$inferSelect;
+
+
+
+// ^ Система оборудования
+export const rooms = pgTable("rooms", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  number: varchar("number", { length: 6 }).notNull().unique(),
+  description: text("description")
+})

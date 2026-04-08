@@ -99,10 +99,10 @@ export default function PrivateHeader() {
               <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1a1a2e] rounded-xl shadow-lg border border-gray-200 dark:border-white/10 overflow-hidden z-20">
                 <div className="py-1">
-                  <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                  <Link href="/profile" onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                     Профиль
                   </Link>
-                  <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                  <Link href="/settings" onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                     Настройки
                   </Link>
                   <hr className="my-1 border-gray-200 dark:border-white/10" />
