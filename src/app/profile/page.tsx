@@ -75,7 +75,7 @@ export default function ProfilePage() {
     setSuccessInfo(false);
 
     try {
-      const res = await fetch("/api/profile", {
+      const res = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

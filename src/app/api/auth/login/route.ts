@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
     userId:    user.id,
     role:      user.role,
   })
-  console.log(token)
   // 5. Сохранить сессию в БД
   await createSession({
     userId:    user.id,

@@ -21,7 +21,6 @@ export async function createSession(params: {
         ip: params.ip,
         expiresAt
     }).returning();
-    console.log(newtoken[0].tokenHash)
 }
 
 
@@ -43,7 +42,6 @@ export async function findSession(token: string){
 // Удалить одну сессию (выход с текущего устройства)
 export async function deleteSession(token: string) {
     const th = await hashToken(token);
-    console.log(th, token)
     await db
         .delete(sessions)
         .where(eq(sessions.tokenHash, th))

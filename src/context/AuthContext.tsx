@@ -2,17 +2,18 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserRole } from "@/lib/db/schema";
+import { User } from "@/lib/db/schema";
+// import { UserRole } from "@/lib/db/schema";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  firstname?: string;
-  lastname?: string;
-  isActive?: boolean;
-}
+// interface User {
+//   id: string;
+//   name: string;
+//   email: string;
+//   role: UserRole;
+//   firstname?: string;
+//   lastname?: string;
+//   isActive?: boolean;
+// }
 
 interface AuthContextType {
   user: User | null;
@@ -79,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refetchUser = useCallback(async () => {
     await fetchCurrentUser();
   }, [fetchCurrentUser]);
-  console.log('render:', { user, isLoading, isAuthenticated: !!user });
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, logout, refetchUser }}>
       {children}

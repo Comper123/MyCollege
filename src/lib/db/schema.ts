@@ -1,5 +1,5 @@
-import { relations } from "drizzle-orm";
-import { boolean, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { InferSelectModel, relations } from "drizzle-orm";
+import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 
 
@@ -18,7 +18,7 @@ export const users = pgTable("users", {
     lastname:       varchar("lastname", {length: 50}).notNull(),
     fathername:     varchar("fathername", {length: 50}),
     role:           userRoleEnum("role").notNull().default("teacher"),
-    passwordHash:       text("passwordHash").notNull(),
+    passwordHash:   text("passwordHash").notNull(),
     passwordShifr:  text("passwordShifr").notNull(),
     isActive:       boolean('is_active').notNull().default(false), // до подтверждения админом
     createdAt:      timestamp('created_at').notNull().defaultNow(),
@@ -58,3 +58,14 @@ export const rooms = pgTable("rooms", {
   number: varchar("number", { length: 6 }).notNull().unique(),
   description: text("description")
 })
+
+// Тип оборудования
+export const equipmentTypes = pgTable("equipmentType", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  description: text("description"),
+  attributesSchema: jsonb("attributesSchema").array().default([]),
+  createdAt: timestamp("createdAt").defaultNow()
+})
+
+export type EquipmentType = InferSelectModel<typeof equipmentTypes>;

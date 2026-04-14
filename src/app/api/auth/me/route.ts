@@ -29,6 +29,7 @@ export async function GET() {
         email: true,
         firstname: true,
         lastname: true,
+        fathername: true,
         role: true,
         isActive: true,
       }
@@ -50,6 +51,7 @@ export async function GET() {
         email: user.email,
         role: user.role,
         firstname: user.firstname,
+        fathername: user.fathername,
         lastname: user.lastname,
         isActive: user.isActive,
       }
