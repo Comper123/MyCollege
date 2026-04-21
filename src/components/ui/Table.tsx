@@ -1,20 +1,31 @@
-interface TableProps {
-
+interface Column {
+  title: string;
+  render: () => React.ReactNode;
 }
 
-export default function Table({ }: TableProps) {
+interface TableProps {
+  columns: Column[]
+}
+
+export default function Table({ columns }: TableProps) {
   
   return (
     <table>
       <th>
-        <td>
-
-        </td>
+        {columns.map((col, ind) => ( 
+          <td key={ind}>
+            {col.title}
+          </td>
+        ))}
       </th>
+      
       <tr>
-        <td>
-          
-        </td>
+        {columns.map((col, ind) => (
+          <td>
+
+          </td>
+        ))}
+        
       </tr>
     </table>  
   )

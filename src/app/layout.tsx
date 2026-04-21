@@ -34,7 +34,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ConditionalHeader />
-            <div className="pt-16">
+            <div>
               {children}
             </div>
           </AuthProvider>
