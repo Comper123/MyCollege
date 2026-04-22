@@ -29,6 +29,6 @@ export function withAuth<P = Record<string, string>>(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    return handler(req, ctx, user);
+    return handler(req, ctx, user as RequestUser);
   };
 }

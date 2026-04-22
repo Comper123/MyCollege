@@ -1,8 +1,9 @@
 interface GridProps {
   cols: number;
+  children: React.ReactNode;
 }
 
-export default function Grid({ cols } : GridProps){
+export default function Grid({ cols, children } : GridProps){
   const columnClass = [
     'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4',
     'grid-cols-5', 'grid-cols-6', 'grid-cols-7', 'grid-cols-8',
@@ -10,8 +11,8 @@ export default function Grid({ cols } : GridProps){
   ];
 
   return (
-    <div className={`grid ${columnClass[cols]}`}>
-
+    <div className={`grid ${columnClass[cols - 1]} gap-4`}>
+      {children}
     </div>
   )
 }

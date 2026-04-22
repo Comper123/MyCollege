@@ -1,6 +1,9 @@
-export type FieldType = 'string' | 'text' | 'number' | 'date' | 'float';
+export const fieldTypes = ['string', 'text', 'number', 'date', 'float'] as const;
+export type FieldType = typeof fieldTypes[number];
+
 
 export interface CustomField {
+  name: string;
   type: FieldType;
 }
 

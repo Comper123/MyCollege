@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { db } from "../db/db";
 import { eq } from "drizzle-orm";
-import { users } from "../db/schema";
+import { UserRole, users } from "../db/schema";
 import { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { RequestUser } from "./types";
@@ -33,9 +33,11 @@ export async function getUserFromRequest(req: NextRequest): Promise<RequestUser 
   try {
     const sessionCookie = req.cookies.get("session")?.value;
     if (!sessionCookie) return null;
-    const payload = await jwtVerify(sessionCookie, SECRET) as unknown as SessionPayload;
-    const user = payload;
-    return user as RequestUser
+    const { payload } = await jwtVerify(sessionCookie, SECRET);
+    return {
+      userId: payload.userId as string,
+      role: payload.role as UserRole
+    }
   } catch {
     return null;
   }

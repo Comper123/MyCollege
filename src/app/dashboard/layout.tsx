@@ -134,7 +134,7 @@ function NavItem({item, user} : NavItemProps){
     <>  
     {item.subNavs ? (
       <div className="flex flex-col w-full items-center text-sm transition-all overflow-hidden whitespace-nowrap">
-        <p onClick={() => setIsOpen(prev => !prev)}
+        <div onClick={() => setIsOpen(prev => !prev)}
         className="text-gray-600 dark:text-white/60 flex gap-2.5 cursor-pointer h-full w-full hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg hover:text-gray-900 dark:hover:text-white px-4 py-2.5">
           <span className="shrink-0">{item.icon}</span>
           <span>{item.label}</span>
@@ -145,7 +145,7 @@ function NavItem({item, user} : NavItemProps){
               <ChevronRight strokeWidth={1} size={16}/>
             )}
           </div>
-        </p>
+        </div>
         {isOpen && (
           <div className="w-max ml-4 mt-1 flex flex-col gap-1">
             {item.subNavs.map((nav, i) => <NavItem item={nav} key={i}/>)}

@@ -57,10 +57,10 @@ export default function Modal({ size = 'md', children, isOpen, onClose, title} :
       onClick={handleBackdropClick}>
       <div
         ref={modalRef} 
-        className={`p-8 bg-white rounded-xl ${modalClasses[size]}`}>
-        <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
-          <h2 className="text-lg font-medium">{title}</h2>
-          <div className="p-1 hover:bg-gray-100 cursor-pointer rounded-md" onClick={onClose}>
+        className={`p-8 pt-0 bg-white dark:bg-[#1a1927] relative rounded-xl ${modalClasses[size]} max-h-[95vh] overflow-y-auto scrollbar-thin`}>
+        <div className="flex justify-between top-0 py-6 bg-white dark:bg-[#1a1927] sticky items-center mb-3 pb-2 border-b border-gray-100 dark:border-white/10">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white">{title}</h2>
+          <div className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer rounded-md text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors" onClick={onClose}>
             <X size={20}/>
           </div>
         </div>
