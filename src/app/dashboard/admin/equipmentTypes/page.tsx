@@ -2,6 +2,7 @@
 
 
 import EmptyBlock from "@/components/blocks/EmptyBlock";
+import ContextMenu from "@/components/ui/Actions";
 import { Block } from "@/components/ui/Block";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/forms/Card";
@@ -14,8 +15,8 @@ import { Column, Table} from "@/components/ui/Table";
 import { EquipmentType } from "@/lib/db/schema"
 import { CustomField, FieldTypeLabels, fieldTypes } from "@/types/equipmentTypes";
 import { formatDateTime } from "@/utils/datetime/dateFormatter";
-import { ArrowRight, LayoutGrid, Plus, Table as TableIcon, Trash, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react"
+import { ArrowRight, LayoutGrid, Pencil, Plus, Table as TableIcon, Trash, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react"
 
 
 
@@ -41,7 +42,7 @@ export default function EquipmentTypesPage(){
 
   // Модалки
   const [isCreateEqTypeOpen, setIsCreateEqTypeOpen] = useState(false);
-
+  
   useEffect(() => {
     const loadEquipmentList = async () => {
       try {
@@ -73,6 +74,15 @@ export default function EquipmentTypesPage(){
       title: "Дата создания",
       key: "createdAt",
       render: (value) => <p>{formatDateTime(value as string, "full")}</p>
+    },
+    {
+      title: "Действия",
+      key: "id",
+      render: (_, row) => (
+        <div className="">
+
+        </div>
+      )
     }
   ]
 
@@ -138,6 +148,15 @@ export default function EquipmentTypesPage(){
     
   }
 
+  // Список типов оборудования с учетом поиска
+  const filteredEquipmentList = useMemo(() => {
+    if (!search.trim()) return equipmentTypesList
+
+    return equipmentTypesList.filter(eq =>
+      eq.name.toLowerCase().includes(search.toLowerCase().trim())
+    )
+  }, [search, equipmentTypesList])
+
   return (
     <main>
       <Block>
@@ -161,15 +180,32 @@ export default function EquipmentTypesPage(){
           </Button>
         </div>
         
-        {equipmentTypesList.length > 0 ? (
+        {filteredEquipmentList.length > 0 ? (
           <div className="mt-6">
             {/* Сами типы оборудования */}
             {mode === "grid" ? (
               <Grid cols={3}>
-                {equipmentTypesList.map((eqT, i) => (
+                {filteredEquipmentList.map((eqT, i) => (
                   <Card key={i}>
-                    <h1 className="text-gray-800 font-semibold">{eqT.name}</h1>
-                    <p className="text-gray-400 text-xs mb-2">{eqT.description || "Нет описания"}</p>
+                    <div className="flex justify-between">
+                      <div>
+                        <h1 className="text-gray-800 font-semibold">{eqT.name}</h1>
+                        <p className="text-gray-400 text-xs mb-2">{eqT.description || "Нет описания"}</p>
+                      </div>
+                      <ContextMenu items={[
+                        {
+                          label: "Редактировать",
+                          icon: <Pencil size={14} />,
+                          onClick: () => console.log("edit"),
+                        },
+                        {
+                          label: "Удалить",
+                          icon: <Trash size={14} />,
+                          variant: "danger",
+                          onClick: () => console.log("delete"),
+                        },
+                      ]} />
+                    </div>
                     <hr className="border-b-0 mb-2"/>
                     {eqT.attributesSchema && eqT.attributesSchema?.length > 0 ? (
                       <div className="">
@@ -191,7 +227,7 @@ export default function EquipmentTypesPage(){
             ) : (
               <Table
                 columns={columns}
-                data={equipmentTypesList}
+                data={filteredEquipmentList}
                 keyExtractor={row => row.id}
               />
             )}
@@ -241,7 +277,7 @@ export default function EquipmentTypesPage(){
             {selectPropI !== null ? (
               <ModalField title="Тип поля">
                 <select className={selectCls}>
-                  {fieldTypes.map((t, i) => (
+                  {fieldTypes.map((t, i) => ( 
                     <option key={i} value={t} className={optionCls}>{FieldTypeLabels[t]}</option>
                   ))}
                 </select>
