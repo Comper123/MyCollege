@@ -2,6 +2,7 @@
 
 
 import EmptyBlock from "@/components/blocks/EmptyBlock";
+import EquipmentTypeModal from "@/components/pages/dashboard/admin/equipmentTypes/equipmentTypeModal";
 import ContextMenu from "@/components/ui/Actions";
 import { Block } from "@/components/ui/Block";
 import Button from "@/components/ui/Button";
@@ -13,32 +14,21 @@ import Modal, { ModalField, ModalGroupField } from "@/components/ui/Modal";
 import SearchInput from "@/components/ui/SearchInput";
 import { Column, Table} from "@/components/ui/Table";
 import { EquipmentType } from "@/lib/db/schema"
-import { CustomField, FieldTypeLabels, fieldTypes } from "@/types/equipmentTypes";
+import { CustomField, EquipmentTypeForm, FieldTypeLabels, fieldTypes } from "@/types/equipmentTypes";
 import { formatDateTime } from "@/utils/datetime/dateFormatter";
 import { ArrowRight, LayoutGrid, Pencil, Plus, Table as TableIcon, Trash, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react"
 
 
 
-interface EquipmentTypeForm {
-  name: string;
-  description: string;
-  fields: CustomField[]
-}
+
 
 export default function EquipmentTypesPage(){
   const [equipmentTypesList, setEqupmentTypesList] = useState<EquipmentType[]>([])
-  const [mode, setMode] = useState<"grid" | "table">("table");
+  const [mode, setMode] = useState<"grid" | "table">("grid");
   const [search, setSearch] = useState<string>("");
 
-  const [createForm, setCreateForm] = useState<EquipmentTypeForm>({
-    name: '',
-    description: '',
-    fields: [{name: "", type: "string"}]
-  });
-  const [createError, setCreateError] = useState("");
-
-  const [selectPropI, setSelectPropI] = useState<number | null>(null);
+  const [createForm, setCreateForm] = useState<EquipmentTypeForm>();
 
   // Модалки
   const [isCreateEqTypeOpen, setIsCreateEqTypeOpen] = useState(false);
@@ -69,6 +59,7 @@ export default function EquipmentTypesPage(){
     {
       title: "Описание",
       key: "description",
+      render: (value) => <p className="max-w-96 truncate text-gray-400">{value as string}</p>
     },
      {
       title: "Дата создания",
@@ -79,7 +70,7 @@ export default function EquipmentTypesPage(){
       title: "Действия",
       key: "id",
       render: (_, row) => (
-        <div className="">
+        <div className="flex gap-2">
 
         </div>
       )
@@ -190,7 +181,7 @@ export default function EquipmentTypesPage(){
                     <div className="flex justify-between">
                       <div>
                         <h1 className="text-gray-800 font-semibold">{eqT.name}</h1>
-                        <p className="text-gray-400 text-xs mb-2">{eqT.description || "Нет описания"}</p>
+                        <p className="text-gray-400 text-xs mb-2 line-clamp-1">{eqT.description || "Нет описания"}</p>
                       </div>
                       <ContextMenu items={[
                         {
@@ -233,65 +224,13 @@ export default function EquipmentTypesPage(){
             )}
           </div>
         ) : (
-          <EmptyBlock title="Ни один тип оборудования пока еще не создан, исправьте это!"/>
-        )}
-        
+          <EmptyBlock title={search ? 'Такого типа оборудования не существует' : 'Ни один тип оборудования пока еще не создан, исправьте это!'}/>
+        )}   
       </Block>
-
-      <Modal size="xl" isOpen={isCreateEqTypeOpen} onClose={() => setIsCreateEqTypeOpen(false)} title="Создать тип оборудования">
-        {createError && (
-          <p className="py-2 px-4 bg-red-100 text-sm text-red-600 rounded-lg mb-2 flex gap-2 items-center"><TriangleAlert/>{createError}</p>
-        )}
-        <div className="grid grid-cols-2 gap-4">
-          <ModalGroupField title="Характеристики">
-            <div className="space-y-1 mb-5">
-              <ModalField title="Название">
-                <input type="text" className={inputCls} value={createForm.name} onChange={e => setCreateForm(prev => ({...prev, name: e.target.value}))}/>
-              </ModalField>
-              <ModalField title="Описание">
-                <textarea className={inputCls} rows={5} value={createForm.description} onChange={e => setCreateForm(prev => ({...prev, description: e.target.value}))}/>
-              </ModalField>
-              <ModalField title="Дополнительные свойства" action={addField} actionText="+ Добавить">
-                <div className="mt-2 max-h-48 overflow-y-auto scrollbar-thin">
-                  {createForm.fields.map((f, i) => (
-                    <div key={i} className={`${i === selectPropI ? 'bg-indigo-100/60' : ''} rounded-lg px-4 py-2 grid gap-2 grid-cols-10 items-center`} onClick={() => setSelectPropI(i)}>
-                      <p className="text-xs text-gray-600 font-semibold">#{i}</p>
-                      <input type="text" placeholder="Введите название свойства:"
-                        className={`${inputCls} col-span-7`} value={f.name} onChange={e => editField("name", e.target.value, i)}/>
-                      <div className="h-full flex justify-end items-center col-span-2">
-                        <div className="p-2 hover:bg-red-50 duration-300 rounded-lg cursor-pointer text-red-600"
-                          onClick={() => removeField(i)}>
-                          <Trash size={16}/>
-                        </div>
-                        <div className="p-2 hover:bg-indigo-50 duration-300 rounded-lg cursor-pointer text-indigo-600">
-                          <ArrowRight size={16}/>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ModalField>
-            </div>
-          </ModalGroupField>
-          <ModalGroupField title={selectPropI !== null && createForm.fields[selectPropI] ? createForm.fields[selectPropI].name === "" ? 'Нет названия' : createForm.fields[selectPropI].name : "Свойство не выбрано"}>
-            {selectPropI !== null ? (
-              <ModalField title="Тип поля">
-                <select className={selectCls}>
-                  {fieldTypes.map((t, i) => ( 
-                    <option key={i} value={t} className={optionCls}>{FieldTypeLabels[t]}</option>
-                  ))}
-                </select>
-              </ModalField>
-            ) : (
-              <div className="h-full flex items-center">
-                <p className="text-gray-400 text-sm">Выберите свойство для просмотра и редактирования</p>
-              </div>
-            )}
-          </ModalGroupField>
-        </div>
-        
-        <Button className="ml-auto" onClick={handleCreate}>Создать</Button>
-      </Modal>
+      <EquipmentTypeModal
+        isOpen={isCreateEqTypeOpen}
+        onClose={() => setIsCreateEqTypeOpen(false)}/
+        initialData={createForm}>
     </main>
   )
 }

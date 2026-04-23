@@ -14,3 +14,16 @@ export const FieldTypeLabels: Record<FieldType, string> = {
   float: "Дробное число",
   date: "Дата"
 }
+
+
+export interface EquipmentTypeForm {
+  name?: string;
+  description?: string;
+  fields?: CustomField[]
+}
+
+export const emptyEquiupmentTypeForm = {
+  name: '',
+  description: '',
+  fields: [{name: "", type: "string"} as CustomField]
+}
