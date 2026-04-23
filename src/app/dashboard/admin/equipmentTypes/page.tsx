@@ -6,40 +6,79 @@ import EquipmentTypeModal from "@/components/pages/dashboard/admin/equipmentType
 import ContextMenu from "@/components/ui/Actions";
 import { Block } from "@/components/ui/Block";
 import Button from "@/components/ui/Button";
+import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 import Card from "@/components/ui/forms/Card";
-import { inputCls } from "@/components/ui/forms/Input";
-import { optionCls, selectCls } from "@/components/ui/forms/Select";
 import Grid from "@/components/ui/Grid";
-import Modal, { ModalField, ModalGroupField } from "@/components/ui/Modal";
 import SearchInput from "@/components/ui/SearchInput";
 import { Column, Table} from "@/components/ui/Table";
 import { EquipmentType } from "@/lib/db/schema"
-import { CustomField, EquipmentTypeForm, FieldTypeLabels, fieldTypes } from "@/types/equipmentTypes";
+import { CustomField } from "@/types/equipmentTypes";
 import { formatDateTime } from "@/utils/datetime/dateFormatter";
-import { ArrowRight, LayoutGrid, Pencil, Plus, Table as TableIcon, Trash, TriangleAlert } from "lucide-react";
+import { LayoutGrid, Pencil, Plus, Table as TableIcon, Trash } from "lucide-react";
 import { useEffect, useMemo, useState } from "react"
 
 
-
-
-
 export default function EquipmentTypesPage(){
-  const [equipmentTypesList, setEqupmentTypesList] = useState<EquipmentType[]>([])
+  const [equipmentTypesList, setEquipmentTypesList] = useState<EquipmentType[]>([])
   const [mode, setMode] = useState<"grid" | "table">("grid");
   const [search, setSearch] = useState<string>("");
 
-  const [createForm, setCreateForm] = useState<EquipmentTypeForm>();
-
   // Модалки
   const [isCreateEqTypeOpen, setIsCreateEqTypeOpen] = useState(false);
-  
+  const [isEditEqTypeOpen, setIsEditEqTypeOpen] = useState(false);
+  const [isDeleteEqTypeOpen, setIsDeleteEqTypeOpen] = useState(false);
+
+  const [editEqTypeId, setEditEqTypeId] = useState("");
+  const [deleteEqTypeId, setDeleteEqTypeId] = useState("");
+  const [editedEqType, setEditedEqType] = useState<EquipmentType>();
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+
+  const openDeleteModal = (id: string) => {
+    setDeleteEqTypeId(id);
+    setIsDeleteEqTypeOpen(true);
+  }
+
+  const loadEquipmentType = async (id: string) => {
+    const resp = await fetch(`/api/admin/equipmentTypes/${id}`);
+    const data: EquipmentType = await resp.json();
+    setEditedEqType(data);
+  }
+
+  const openEditModal = async (id: string) => {
+    loadEquipmentType(id);
+    setIsEditEqTypeOpen(true);
+  }
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const resp = await fetch(`/api/admin/equipmentTypes/${deleteEqTypeId}`, {
+        method: "DELETE"
+      })
+      if (resp.ok) {
+        setEquipmentTypesList(prev => prev.filter(t => t.id !== deleteEqTypeId));
+        setDeleteEqTypeId("");
+        setIsDeleteEqTypeOpen(false);
+      } else {
+        
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   useEffect(() => {
     const loadEquipmentList = async () => {
       try {
         const resp = await fetch("/api/admin/equipmentTypes");
         if (resp.ok){
           const formatData: EquipmentType[] = await resp.json(); 
-          setEqupmentTypesList(formatData);
+          setEquipmentTypesList(formatData);
         } else {
           console.log("Неуспешная загрузка типов оборудования");
         }
@@ -70,74 +109,21 @@ export default function EquipmentTypesPage(){
       title: "Действия",
       key: "id",
       render: (_, row) => (
-        <div className="flex gap-2">
-
+        <div className="flex items-center gap-2">
+          <div
+            className="hover:bg-red-100 duration-300 text-red-500 cursor-pointer p-1 rounded-md" 
+            onClick={() => openDeleteModal(row.id)}>
+            <Trash size={16}/>
+          </div>
+          <div
+            className="hover:bg-indigo-100 duration-300 text-indigo-500 cursor-pointer p-1 rounded-md" 
+            onClick={() => openEditModal(row.id)}>
+            <Pencil size={16}/>
+          </div>
         </div>
       )
     }
   ]
-
-  // Добавление нового поля
-  const addField = () => {
-    setCreateForm(prev => ({...prev, fields: [...prev.fields, {name: "", type: 'string'}]}))
-  }
-
-  // Изменение конкретного поля
-  const editField = (field: keyof CustomField, value: string, i: number) => {
-    setCreateForm(prev => ({
-      ...prev,
-      fields: prev.fields.map((f, index) =>
-        index === i ? { ...f, [field]: value } : f
-      )
-    }))
-  }
-
-  // Удаление поля
-  const removeField = (i: number) => {
-    setCreateForm(prev => {
-      const newFields = prev.fields.filter((_, index) => index !== i)
-      // Сбрасываем если массив стал пустым
-      if (newFields.length === 0) setSelectPropI(null)
-      return { ...prev, fields: newFields }
-    })
-
-    // Сбрасываем или корректируем выбранный индекс
-    setSelectPropI(prev => {
-      if (prev === null) return null
-      if (prev === i) return null        // удалили выбранный элемент
-      if (prev > i) return prev - 1      // выбранный сдвинулся
-      return prev                        // выбранный не затронут
-    })
-  }
-
-  // Создание типа оборудования
-  const handleCreate = async () => {
-    if (createForm.name.trim().length === 0){
-      setCreateError("У типа оборудования должно быть название");
-      return;
-    }
-
-    if (createForm.fields.some(f => f.name.trim().length === 0)){
-      setCreateError("У типа оборудования не должно быть полей с пустым названием");
-      return;
-    }
-
-    try {
-      const resp = await fetch('/api/admin/equipmentTypes', {
-        method: "POST",
-        body: JSON.stringify(createForm)
-      });
-      if (resp.ok) {
-        setIsCreateEqTypeOpen(false);
-        setCreateError("");
-      } else {
-        setCreateError("Ошибка создания типа оборудования. Проверьте все поля");
-      }
-    } catch (error) {
-      console.log(error)
-    }
-    
-  }
 
   // Список типов оборудования с учетом поиска
   const filteredEquipmentList = useMemo(() => {
@@ -177,7 +163,7 @@ export default function EquipmentTypesPage(){
             {mode === "grid" ? (
               <Grid cols={3}>
                 {filteredEquipmentList.map((eqT, i) => (
-                  <Card key={i}>
+                  <Card key={eqT.id}>
                     <div className="flex justify-between">
                       <div>
                         <h1 className="text-gray-800 font-semibold">{eqT.name}</h1>
@@ -187,13 +173,13 @@ export default function EquipmentTypesPage(){
                         {
                           label: "Редактировать",
                           icon: <Pencil size={14} />,
-                          onClick: () => console.log("edit"),
+                          onClick: () => openEditModal(eqT.id),
                         },
                         {
                           label: "Удалить",
                           icon: <Trash size={14} />,
                           variant: "danger",
-                          onClick: () => console.log("delete"),
+                          onClick: () => openDeleteModal(eqT.id),
                         },
                       ]} />
                     </div>
@@ -202,12 +188,15 @@ export default function EquipmentTypesPage(){
                       <div className="">
                         {/* Список характеристик типа оборудования */}
                         <p className="text-gray-600 text-sm font-medium">Характеристики:</p>
-                        {eqT.attributesSchema.map((field, i) => (
-                          <div key={i} className="flex items-center">
-                            <span className="rounded-full aspect-square h-5 bg-gray-200 p-1 text-xs text-gray-600 mr-1 flex items-center justify-center">{i + 1}</span>
-                            <p className="text-gray-400 text-sm"> {(field as CustomField).name}</p>
+                        {eqT.attributesSchema.slice(0, 3).map((field, i) => (
+                          <div key={i} className="flex items-center mb-1">
+                            <span className="rounded-full aspect-square h-4 bg-gray-200 p-0.5 text-xs text-gray-600 mr-1 flex items-center justify-center">{i + 1}</span>
+                            <p className="text-gray-400 text-xs"> {(field as CustomField).name}</p>
                           </div>
                         ))}
+                        {eqT.attributesSchema?.length > 3 && (
+                          <p className="text-gray-400 text-xs -mt-1">И еще + {eqT.attributesSchema?.length - 3}</p>
+                        )}
                       </div>
                     ) : (
                       <p className="text-gray-600 text-sm font-medium">Характеристик не загружено</p>
@@ -229,8 +218,25 @@ export default function EquipmentTypesPage(){
       </Block>
       <EquipmentTypeModal
         isOpen={isCreateEqTypeOpen}
-        onClose={() => setIsCreateEqTypeOpen(false)}/
-        initialData={createForm}>
+        onClose={() => setIsCreateEqTypeOpen(false)}
+        setEquipmentTypesList={setEquipmentTypesList}/>
+
+      <EquipmentTypeModal
+        isOpen={isEditEqTypeOpen}
+        onClose={() => setIsEditEqTypeOpen(false)}
+        setEquipmentTypesList={setEquipmentTypesList}
+        initialData={editedEqType}/>
+
+      <ConfirmDeleteModal
+        isOpen={isDeleteEqTypeOpen}
+        onClose={() => setIsDeleteEqTypeOpen(false)}
+        onConfirm={handleDelete}
+        title="Удалить тип оборудования?"
+        description={<>Все единицы этого типа потеряют привязку.</>}
+        confirmText="Да, удалить"
+        cancelText="Нет, оставить"
+        isLoading={isDeleting}
+      />
     </main>
   )
 }

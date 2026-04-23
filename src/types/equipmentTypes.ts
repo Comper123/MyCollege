@@ -1,4 +1,4 @@
-export const fieldTypes = ['string', 'text', 'number', 'date', 'float'] as const;
+export const fieldTypes = ['string', 'text', 'number', 'date', 'float', 'enum'] as const;
 export type FieldType = typeof fieldTypes[number];
 
 
@@ -12,18 +12,19 @@ export const FieldTypeLabels: Record<FieldType, string> = {
   text: "Длинный текст",
   number: "Число",
   float: "Дробное число",
-  date: "Дата"
+  date: "Дата",
+  enum: "Вариант из"
 }
 
 
 export interface EquipmentTypeForm {
-  name?: string;
-  description?: string;
-  fields?: CustomField[]
+  name: string;
+  description: string;
+  attributesSchema?: CustomField[]
 }
 
 export const emptyEquiupmentTypeForm = {
   name: '',
   description: '',
-  fields: [{name: "", type: "string"} as CustomField]
+  attributesSchema: [{name: "", type: "string"} as CustomField]
 }

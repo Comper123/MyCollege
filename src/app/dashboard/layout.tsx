@@ -175,7 +175,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout } = useAuth();
   
   return (
-    <div className="flex h-[calc(100vh-100px)] bg-gray-50 dark:bg-[#0c0b18]">
+    <div className="flex min-h-[calc(100vh-100px)] bg-gray-50 dark:bg-[#0c0b18]">
       {/* Sidebar */}
       <aside
         className="relative shrink-0 min-w-64 w-max max-w-64 flex flex-col border-r border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0e1c] transition-none"

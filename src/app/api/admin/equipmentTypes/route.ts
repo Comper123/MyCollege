@@ -10,11 +10,11 @@ export const GET = withAuth(async (req, ctx, user) => {
 
 export const POST = withAuth(async (req, ctx, user) => {
   const body = await req.json();
-  const { name, description, fields } = body;
-  await db.insert(equipmentTypes).values({
+  const { name, description, attributesSchema } = body;
+  const [newEqT] = await db.insert(equipmentTypes).values({
     name,
     description,
-    attributesSchema: fields
-  });
-  return NextResponse.json({ status: 204 })
+    attributesSchema
+  }).returning();
+  return NextResponse.json(newEqT, { status: 200 })
 }, ["admin"])

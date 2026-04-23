@@ -52,7 +52,7 @@ export default function Modal({ size = 'md', children, isOpen, onClose, title} :
   return (
     <div 
       ref={backdropRef}
-      className="top-0 left-0 flex items-center justify-center w-screen h-screen absolute bg-black/70 z-50"
+      className="top-0 left-0 bottom-0 right-0 flex items-center justify-center w-screen h-screen absolute bg-black/70 z-50"
       onMouseDown={e => { mouseDownTarget.current = e.target; }}
       onClick={handleBackdropClick}>
       <div
