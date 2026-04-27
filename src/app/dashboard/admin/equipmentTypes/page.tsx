@@ -4,7 +4,7 @@
 import EmptyBlock from "@/components/blocks/EmptyBlock";
 import EquipmentTypeModal from "@/components/pages/dashboard/admin/equipmentTypes/equipmentTypeModal";
 import ContextMenu from "@/components/ui/Actions";
-import { Block } from "@/components/ui/Block";
+import { Block } from "@/components/blocks/Block";
 import Button from "@/components/ui/Button";
 import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 import Card from "@/components/ui/forms/Card";

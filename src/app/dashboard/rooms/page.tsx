@@ -1,5 +1,12 @@
-export default function Roompage(){
+import ProtectedBlock from "@/components/blocks/ProtectedBlock";
+
+export default function RoomsPage(){
+  // const {isMy = }
   return (
-    <div></div>
+    <main className="w-full h-full">
+      <ProtectedBlock allowedRoles={["laborant"]}>
+        <p></p>
+      </ProtectedBlock>
+    </main>
   )
 }

@@ -1,18 +1,13 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ChevronDown, ChevronRight, LibraryBig, UserStar } from "lucide-react"
-import { User, UserRole } from "@/lib/db/schema";
+import { ChevronDown, ChevronRight, DoorOpen, LibraryBig, MailQuestionMark, Monitor, UserStar } from "lucide-react"
+import { UserRole } from "@/lib/db/schema";
 import { SelectUser } from "@/lib/auth/types";
 
-
-const ICON_ONLY_THRESHOLD = 80;
-const DEFAULT_WIDTH = 224;
-const MIN_WIDTH = 48;
-const MAX_WIDTH = 280;
 
 interface NavItemType {
   href: string;
@@ -38,37 +33,37 @@ const navItems: NavItemType[] = [
   {
     href: "/dashboard/equipment",
     label: "Оборудование",
-    icon: (
-      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-        <rect x="2" y="3" width="20" height="14" rx="2" />
-        <line x1="8" y1="21" x2="16" y2="21" />
-        <line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    ),
+    accessRoles: ["laborant", "admin"],
+    icon: (<Monitor strokeWidth={1} size={18}/>),
+  },
+  {
+    href: "/dashboard/equipment",
+    label: "Мое оборудование",
+    accessRoles: ["teacher"],
+    icon: (<Monitor strokeWidth={1} size={18}/>),
   },
   {
     href: "/dashboard/rooms",
     label: "Кабинеты",
-    icon: (
-      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
+    icon: (<DoorOpen strokeWidth={1} size={18}/>),
+  },
+  {
+    href: "/dashboard/rooms",
+    label: "Мои кабинеты",
+    accessRoles: ["teacher"],
+    icon: (<DoorOpen strokeWidth={1} size={18}/>)
   },
   {
     href: "/dashboard/requests",
     label: "Заявки",
-    icon: (
-      <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="9" y1="13" x2="15" y2="13" />
-        <line x1="9" y1="17" x2="13" y2="17" />
-      </svg>
-    ),
+    accessRoles: ["laborant", "admin"],
+    icon: (<MailQuestionMark strokeWidth={1} size={18}/>),
+  },
+  {
+    href: "/dashboard/requests",
+    label: "Мои заявки",
+    accessRoles: ["teacher"],
+    icon: (<MailQuestionMark strokeWidth={1} size={18}/>),
   },
   {
     href: "/dashboard/reports",
