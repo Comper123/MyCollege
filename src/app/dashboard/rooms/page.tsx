@@ -6,11 +6,12 @@ import EmptyBlock from "@/components/blocks/EmptyBlock";
 import ProtectedBlock from "@/components/blocks/ProtectedBlock";
 import Button from "@/components/ui/Button";
 import { inputCls } from "@/components/ui/forms/Input";
-import SelectSearch from "@/components/ui/forms/SelectSearch";
+import SelectSearch, { Option } from "@/components/ui/forms/SelectSearch";
 import Grid from "@/components/ui/Grid";
 import Modal, { ModalField } from "@/components/ui/Modal";
 import SearchInput from "@/components/ui/SearchInput";
-import { Table } from "@/components/ui/Table";
+import { Column, Table } from "@/components/ui/Table";
+import { fio, Room, User } from "@/lib/db/schema";
 import { emptyRoomForm, FullRoom, RoomForm } from "@/types/rooms";
 import { SelectUser } from "@/types/users";
 import { LayoutGrid, Plus, TableIcon } from "lucide-react";
@@ -31,32 +32,53 @@ export default function RoomsPage(){
   // data
   const [rooms, setRooms] = useState<FullRoom[]>([]);
   const [labs, setLabs] = useState<SelectUser[]>([]);
+  const [labOptions, setLabOptions] = useState<Option[]>([]);
   const [teachers, setTeachers] = useState<SelectUser[]>([]);
-
+  const [teachersOptions, setTeachersOptions] = useState<Option[]>([]);
+  
   useEffect(() => {
     const fetchRooms = async () => {
       const resp = await fetch(`/api/rooms?isMy=${isMy}`);
       if (resp.ok){
         const data: FullRoom[] = await resp.json();
-        console.log(data);
         setRooms(data);
       } else {
         console.log("Ошибка загрузки кабинетов");
       }
     };
     fetchRooms();
-  }, []);
+  }, [isMy]);
 
   // Загружаем преподавателей и лаборантов
   useEffect(() => {
-    Promise.all([
-      fetch('/api/admin/users?role=laborant').then(r => r.ok ? r.json() : []),
-      fetch('/api/admin/users?role=teacher').then(r => r.ok ? r.json() : []),
-    ]).then(([l, t]) => {
-      setLabs(l);
-      setTeachers(t);
-    }).catch(() => {});
-    console.log(labs, teachers)
+    const load = async () => {
+      try {
+        const [labRes, teacherRes] = await Promise.all([
+          fetch('/api/admin/users?role=laborant'),
+          fetch('/api/admin/users?role=teacher')
+        ]);
+        const l = labRes.ok ? await labRes.json() : { users: [] };
+        const t = teacherRes.ok ? await teacherRes.json() : { users: [] };
+
+        setLabOptions(
+          l.users.map((i: SelectUser) => ({
+            label: fio(i),
+            value: i.id,
+          }))
+        );
+
+        setTeachersOptions(
+          t.users.map((i: SelectUser) => ({
+            label: fio(i),
+            value: i.id,
+          }))
+        );
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    load();
   }, [])
 
   // Кабинеты с учетом поиска
@@ -66,8 +88,43 @@ export default function RoomsPage(){
   }, [search, rooms]);
 
   const handleCreate = async () => {
+    try {
+      const resp = await fetch('/api/rooms', {
+        method: "POST",
+        body: JSON.stringify(createForm)
+      });
+      if (resp.ok){
+        const newRoom: FullRoom = await resp.json();
+        setRooms(prev => ([...prev, newRoom]));
+      } else {
 
+      }
+    } catch (error) {
+      console.log(error);
+    }    
   }
+
+  const columns: Column<FullRoom>[] = [
+    {
+      title: "Номер",
+      key: "number"
+    },
+    {
+      title: "Описание",
+      key: "description",
+      render: (value) => <p className="max-w-96 truncate text-gray-400">{value as string}</p>
+    },
+    {
+      title: "Ответственный лаборант",
+      key: "attachedLaborant",
+      render: (value, row) => <p>{fio(value as SelectUser)}</p>
+    },
+    {
+      title: "Ответственный преподаватель",
+      key: "attachedTeacher",
+      render: (value, row) => <p>{fio(value as SelectUser)}</p>
+    }
+  ]
 
   return (
     <main className="w-full h-full">
@@ -106,12 +163,11 @@ export default function RoomsPage(){
                   <p></p>
                 </Grid>
               ) : (
-                // <Table
-                //   columns={columns}
-                //   data={filteredEquipmentList}
-                //   keyExtractor={row => row.id}
-                // />
-                <p></p>
+                <Table
+                  columns={columns}
+                  data={roomsSearch}
+                  keyExtractor={row => row.id}
+                />
               )}
             </div>
           ) : (
@@ -129,16 +185,16 @@ export default function RoomsPage(){
             <ModalField title="Номер">
               <input type="text" className={inputCls} value={createForm.number} onChange={(e) => setCreateForm(prev => ({...prev, number: e.target.value}))}/>
             </ModalField>
+            <ModalField title="Закрепленный преподаватель">
+              <SelectSearch options={teachersOptions} value={createForm.teacher_id} onChange={value => setCreateForm(prev => ({...prev, teacher_id: value}))}/>
+            </ModalField>
+            <ModalField title="Закрепленный лаборант">
+              <SelectSearch options={labOptions} value={createForm.laborant_id} onChange={value => setCreateForm(prev => ({...prev, laborant_id: value}))}/>
+            </ModalField>
             <ModalField title="Назначение">
               <textarea className={inputCls} rows={5} value={createForm.description} onChange={(e) => setCreateForm(prev => ({...prev, description: e.target.value}))}/>
             </ModalField>
-            <ModalField title="Закрепленный преподаватель">
-              {/* <SelectSearch options={}/> */}
-            </ModalField>
-            <ModalField title="Закрепленный лаборант">
-              {/* <SelectSearch/> */}
-            </ModalField>
-            <Button onClick={handleCreate} className="ml-auto mt-3">Создать</Button>
+            <Button onClick={() => handleCreate()} className="ml-auto mt-3">Создать</Button>
           </Modal>
         </>
       }

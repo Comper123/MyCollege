@@ -58,3 +58,9 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 export type UserRole = typeof userRoleEnum.enumValues[number];
 export type User     = typeof users.$inferSelect;
 export type Session  = typeof sessions.$inferSelect;
+
+
+// & Functions
+export function fio(u: User): string {
+  return `${u.lastname} ${u.firstname} ${u.fathername || ''}`
+} 

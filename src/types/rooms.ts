@@ -2,7 +2,7 @@ import { Room, User } from "@/lib/db/schema";
 
 
 export interface FullRoom extends Omit<Room, 'attached_teacher' | 'attached_lab'> {
-  attechedTeacher: User,
+  attachedTeacher: User,
   attachedLaborant: User
 }
 
