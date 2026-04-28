@@ -1,14 +1,18 @@
 import { withAuth } from "@/lib/auth/withAuth";
 import { db } from "@/lib/db/db";
-import { users } from "@/lib/db/schema";
+import { UserRole, users } from "@/lib/db/schema";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export const GET = withAuth(async (req, ctx, user) => {
+  const url = new URL(req.url);
+  const role = url.searchParams.get("role");
+
   const allUsers = await db.query.users.findMany({
     columns: { passwordHash: false, passwordShifr: false },
     orderBy: (users, { desc }) => [desc(users.createdAt)],
+    where: role === null ? undefined : (u, {eq}) => eq(u.role, role as UserRole)
   })
  
   return NextResponse.json({ users: allUsers })

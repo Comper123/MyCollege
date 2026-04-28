@@ -348,7 +348,7 @@ function UserDetailModal({ user: initialUser, onClose, onUpdated, onDeleted, cur
                   className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#603EF9]/50 transition-all disabled:opacity-50">
                   <option value="teacher">Преподаватель</option>
                   <option value="laborant">Лаборант</option>
-                  <option value="admin">Администратор</option>
+                  {/* <option value="admin">Администратор</option> */}
                 </select>
               </div>
 

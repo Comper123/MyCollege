@@ -5,8 +5,29 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775562640068,
-      "tag": "0000_useful_mesmero",
+      "when": 1777377847526,
+      "tag": "0000_sudden_bushwacker",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777378201560,
+      "tag": "0001_fixed_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777378435149,
+      "tag": "0002_exotic_carnage",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777379316204,
+      "tag": "0003_sour_nomad",
       "breakpoints": true
     }
   ]

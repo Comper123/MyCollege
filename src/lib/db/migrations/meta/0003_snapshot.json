@@ -1,6 +1,6 @@
 {
-  "id": "11e00cbe-a8ca-4ae1-a767-3dcc1a8e850b",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "f5578e72-6e86-4f1e-aa04-850a204a3a96",
+  "prevId": "f2e687d2-22e0-40b0-8e23-3234ac5e1872",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -31,8 +31,7 @@
           "name": "attributesSchema",
           "type": "jsonb[]",
           "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'"
+          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",

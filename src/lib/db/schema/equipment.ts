@@ -1,4 +1,4 @@
-
+// ? Оборудование
 
 
 import { InferSelectModel } from "drizzle-orm";
@@ -14,7 +14,7 @@ export const equipmentTypes = pgTable("equipmentType", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull().unique(),
   description: text("description"),
-  attributesSchema: jsonb("attributesSchema").array().default([]),
+  attributesSchema: jsonb("attributesSchema").array(),
   createdAt: timestamp("createdAt").defaultNow()
 })
 

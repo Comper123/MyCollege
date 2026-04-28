@@ -3,6 +3,7 @@
 
 import { relations } from "drizzle-orm";
 import { boolean, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { rooms } from "./place";
 
 
 // & Enums
@@ -42,12 +43,13 @@ export const sessions = pgTable("sessions", {
 // & Relations
 export const userRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
+  rooms: many(rooms)
 }))
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields:     [sessions.userId],
-    references: [users.id],
+    references: [users.id]
   }),
 }))
 

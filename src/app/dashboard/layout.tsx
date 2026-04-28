@@ -45,10 +45,11 @@ const navItems: NavItemType[] = [
   {
     href: "/dashboard/rooms",
     label: "Кабинеты",
+    accessRoles: ["admin", "laborant"],
     icon: (<DoorOpen strokeWidth={1} size={18}/>),
   },
   {
-    href: "/dashboard/rooms",
+    href: "/dashboard/rooms?isMy=True",
     label: "Мои кабинеты",
     accessRoles: ["teacher"],
     icon: (<DoorOpen strokeWidth={1} size={18}/>)

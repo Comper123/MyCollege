@@ -1,0 +1,1 @@
+ALTER TABLE "equipmentType" ALTER COLUMN "attributesSchema" DROP DEFAULT;
