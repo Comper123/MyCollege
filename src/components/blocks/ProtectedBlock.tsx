@@ -4,6 +4,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/lib/db/schema";
 import AccessDeniedBlock from "./AcessDeniedBlock";
+import Skeleton from "../ui/Skeleton";
 
 
 export default function ProtectedBlock({ allowedRoles = [], children, isHide = false } : { 
@@ -11,7 +12,10 @@ export default function ProtectedBlock({ allowedRoles = [], children, isHide = f
   children: React.ReactNode;
   isHide?: boolean;
 }){
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <Skeleton/>
+
   if (allowedRoles.length === 0 || (user?.role && allowedRoles.includes(user?.role))) {
     return <>{children}</>;
   }

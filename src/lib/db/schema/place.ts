@@ -6,8 +6,6 @@ import { users } from "./users";
 import { InferSelectModel, relations } from "drizzle-orm";
 
 
-
-
 // & Tables
 export const rooms = pgTable("rooms", {
   id: uuid("id").defaultRandom().primaryKey(),

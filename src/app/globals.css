@@ -10,6 +10,26 @@
 }
 
 @layer utilities {
+  .skeleton * {
+    color: transparent !important;
+    background-color: #e5e7eb;
+    border-radius: 6px;
+  }
+
+  .skeleton svg {
+    visibility: hidden;
+  }
+
+  .skeleton {
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+  
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: #e2e8f0 transparent;
