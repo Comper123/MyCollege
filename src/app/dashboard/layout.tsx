@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ChevronDown, ChevronRight, DoorOpen, LibraryBig, MailQuestionMark, Monitor, UserStar } from "lucide-react"
+import { ChevronDown, ChevronRight, DoorOpen, LibraryBig, MailQuestionMark, Monitor, Shield, UserStar } from "lucide-react"
 import { UserRole } from "@/lib/db/schema";
 import { SelectUser } from "@/lib/auth/types";
 
@@ -119,6 +119,14 @@ const navItems: NavItemType[] = [
         accessRoles: ["admin"],
         icon: (
           <LibraryBig strokeWidth={1} size={18}/>
+        ),
+      },
+      {
+        href: "/dashboard/admin/permissions",
+        label: "Права пользователей",
+        accessRoles: ["admin"],
+        icon: (
+          <Shield strokeWidth={1} size={18}/>
         ),
       }
     ]

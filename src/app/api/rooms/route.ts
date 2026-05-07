@@ -19,7 +19,7 @@ export async function getRoom(id: string): Promise<FullRoom>{
 
 export const GET = withAuth(async (req, ctx, user) => {
   const url = new URL(req.url);
-  const isMy = !url.searchParams.get("isMy");
+  const isMy = url.searchParams.get("isMy");
   const rooms = await db.query.rooms.findMany({
     columns: { id: true, description: true, number: true},
     where: !isMy ? undefined : (r, {eq}) => eq(r.attached_teacher, user.userId),
