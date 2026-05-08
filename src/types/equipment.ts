@@ -6,7 +6,7 @@ export interface FullEquipment extends Equipment {
   equipmentType: EquipmentType;
   room: Room | null;
   responsible: User | null;
-  lot: EquipmentLot | null;
+  lot: FullLot | null;
 }
 
 export interface FullLot extends EquipmentLot {

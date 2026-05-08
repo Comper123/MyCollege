@@ -1,20 +1,41 @@
-import { withAuth } from "@/lib/auth/withAuth"
-import { db } from "@/lib/db/db"
-import { equipmentTypes } from "@/lib/db/schema"
-import { NextResponse } from "next/server"
+import { withAuth } from "@/lib/auth/withAuth";
+import { db } from "@/lib/db/db";
+import { equipmentTypes } from "@/lib/db/schema/equipment";
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 
 export const GET = withAuth(async (req, ctx, user) => {
-  const equipmentTypesList = await db.select().from(equipmentTypes)
-  return NextResponse.json(equipmentTypesList, { status: 200 })
-})
+  const types = await db.query.equipmentTypes.findMany({
+    orderBy: (types, { desc }) => [desc(types.createdAt)],
+  });
+  return NextResponse.json(types);
+}, ["admin"]);
 
 export const POST = withAuth(async (req, ctx, user) => {
   const body = await req.json();
   const { name, description, attributesSchema } = body;
-  const [newEqT] = await db.insert(equipmentTypes).values({
-    name,
-    description,
-    attributesSchema
-  }).returning();
-  return NextResponse.json(newEqT, { status: 200 })
-}, ["admin"])
+
+  if (!name?.trim()) {
+    return NextResponse.json({ error: "Название обязательно" }, { status: 400 });
+  }
+
+  // Проверка на уникальность
+  const existing = await db.query.equipmentTypes.findFirst({
+    where: eq(equipmentTypes.name, name.trim()),
+  });
+
+  if (existing) {
+    return NextResponse.json({ error: "Тип с таким названием уже существует" }, { status: 400 });
+  }
+
+  const [newType] = await db
+    .insert(equipmentTypes)
+    .values({
+      name: name.trim(),
+      description: description || null,
+      attributesSchema: attributesSchema || [],
+    })
+    .returning();
+
+  return NextResponse.json(newType);
+}, ["admin"]);

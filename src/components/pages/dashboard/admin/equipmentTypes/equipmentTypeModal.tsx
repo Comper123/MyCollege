@@ -1,181 +1,305 @@
-import Button from "@/components/ui/Button";
-import { inputCls } from "@/components/ui/forms/Input";
-import { optionCls, selectCls } from "@/components/ui/forms/Select";
-import Modal, { ModalField, ModalGroupField } from "@/components/ui/Modal";
-import { EquipmentType } from "@/lib/db/schema";
-import { CustomField, emptyEquiupmentTypeForm, EquipmentTypeForm, FieldTypeLabels, fieldTypes } from "@/types/equipmentTypes";
-import { ArrowRight, Trash, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+"use client";
 
-interface EquipmentTypeModal {
+import { useEffect, useState } from "react";
+import Modal, { ModalField } from "@/components/ui/Modal";
+import { inputCls } from "@/components/ui/forms/Input";
+import Button from "@/components/ui/Button";
+import { EquipmentType } from "@/lib/db/schema";
+import { AttributeSchema, CustomField } from "@/types/equipmentTypes";
+import { Plus, Trash, GripVertical, Hash, Type, ToggleLeft, List } from "lucide-react";
+
+interface Props {
   isOpen: boolean;
   onClose: () => void;
-  initialData?: EquipmentType;
   setEquipmentTypesList: React.Dispatch<React.SetStateAction<EquipmentType[]>>;
+  initialData?: EquipmentType;
 }
 
+const fieldTypes = [
+  { value: "string", label: "Текст", icon: <Type size={14} /> },
+  { value: "number", label: "Число", icon: <Hash size={14} /> },
+  { value: "boolean", label: "Да/Нет", icon: <ToggleLeft size={14} /> },
+  { value: "select", label: "Выбор из списка", icon: <List size={14} /> },
+];
 
-export default function EquipmentTypeModal({ isOpen, onClose, initialData, setEquipmentTypesList} : EquipmentTypeModal){
-  const [selectPropI, setSelectPropI] = useState<number | null>(null);
+export default function EquipmentTypeModal({
+  isOpen,
+  onClose,
+  setEquipmentTypesList,
+  initialData,
+}: Props) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [attributes, setAttributes] = useState<AttributeSchema[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState<EquipmentTypeForm>(initialData ? initialData as EquipmentTypeForm : emptyEquiupmentTypeForm);
-  const [editId, setEditId] = useState("");
-  
+
   useEffect(() => {
-    const updateForm = () => {
-      if (initialData) {
-        setEditId(initialData.id);
-        setForm(initialData as EquipmentTypeForm);
-      } else {
-        setForm(emptyEquiupmentTypeForm);
-      }
+    if (initialData) {
+      setName(initialData.name);
+      setDescription(initialData.description || "");
+      setAttributes((initialData.attributesSchema as AttributeSchema[]) || []);
+    } else {
+      setName("");
+      setDescription("");
+      setAttributes([]);
     }
-    updateForm();
-  }, [initialData]);
+  }, [initialData, isOpen]);
 
-  const mode = initialData ? 'edit' : 'create';
+  const addAttribute = () => {
+    setAttributes([
+      ...attributes,
+      {
+        name: `field_${Date.now()}`,
+        label: "",
+        type: "string",
+        required: false,
+      },
+    ]);
+  };
 
-  // Добавление нового поля
-  const addField = () => {
-    setForm(prev => ({...prev, attributesSchema: [...prev.attributesSchema || [], {name: "", type: 'string'}]}))
-  }
+  const removeAttribute = (index: number) => {
+    setAttributes(attributes.filter((_, i) => i !== index));
+  };
 
-  // Изменение конкретного поля
-  const editField = (field: keyof CustomField, value: string, i: number) => {
-    setForm(prev => ({
-      ...prev,
-      attributesSchema: prev.attributesSchema?.map((f, index) =>
-        index === i ? { ...f, [field]: value } : f
-      )
-    }))
-  }
+  const updateAttribute = (index: number, field: keyof AttributeSchema, value: any) => {
+    const updated = [...attributes];
+    updated[index] = { ...updated[index], [field]: value };
+    
+    // Если изменили name, обновляем его автоматически из label (транслитом)
+    if (field === "label" && value) {
+      updated[index].name = value
+        .toLowerCase()
+        .replace(/[а-яё]/g, (c: string) => {
+          const map: Record<string, string> = {
+            а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e",
+            ж: "zh", з: "z", и: "i", й: "y", к: "k", л: "l", м: "m",
+            н: "n", о: "o", п: "p", р: "r", с: "s", т: "t", у: "u",
+            ф: "f", х: "h", ц: "ts", ч: "ch", ш: "sh", щ: "sch", ъ: "",
+            ы: "y", ь: "", э: "e", ю: "yu", я: "ya",
+          };
+          return map[c] || c;
+        })
+        .replace(/[^a-z0-9_]/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_|_$/g, "");
+    }
+    
+    setAttributes(updated);
+  };
 
-  // Удаление поля
-  const removeField = (i: number) => {
-    setForm(prev => {
-      const newFields = prev.attributesSchema?.filter((_, index) => index !== i)
-      // Сбрасываем если массив стал пустым
-      if (newFields?.length === 0) setSelectPropI(null)
-      return { ...prev, attributesSchema: newFields }
-    })
+  const updateSelectOptions = (index: number, optionsStr: string) => {
+    const options = optionsStr.split(",").map((s) => s.trim()).filter(Boolean);
+    updateAttribute(index, "options", options);
+  };
 
-    // Сбрасываем или корректируем выбранный индекс
-    setSelectPropI(prev => {
-      if (prev === null) return null
-      if (prev === i) return null        // удалили выбранный элемент
-      if (prev > i) return prev - 1      // выбранный сдвинулся
-      return prev                        // выбранный не затронут
-    })
-  }
-
-  // Создание типа оборудования
-  const handleCreate = async () => {
-    if (form.name?.trim().length === 0){
-      setError("У типа оборудования должно быть название");
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      setError("Название типа обязательно");
       return;
     }
 
-    if (form.attributesSchema?.some(f => f.name.trim().length === 0)){
-      setError("У типа оборудования не должно быть полей с пустым названием");
-      return;
-    }
+    setLoading(true);
+    setError("");
+
+    const payload = {
+      name: name.trim(),
+      description: description.trim() || null,
+      attributesSchema: attributes.filter((a) => a.label?.trim()),
+    };
 
     try {
-      const resp = await fetch('/api/admin/equipmentTypes', {
-        method: "POST",
-        body: JSON.stringify(form)
+      const url = initialData
+        ? `/api/admin/equipmentTypes/${initialData.id}`
+        : "/api/admin/equipmentTypes";
+      const method = initialData ? "PUT" : "POST";
+
+      const resp = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+
       if (resp.ok) {
         const data = await resp.json();
-        const newEqT: EquipmentType = data;
-        setEquipmentTypesList(prev => ([...prev, newEqT]))
-        onClose();
-        setForm(emptyEquiupmentTypeForm);
-        setError("");
-      } else {
-        setError("Ошибка создания типа оборудования. Проверьте все поля");
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  const handleEdit = async () => {
-    try {
-      const resp = await fetch(`/api/admin/equipmentTypes/${editId}`, {
-        method: "PATCH",
-        body: JSON.stringify(form)
-      });
-      if (resp.ok){
-        const data: EquipmentType = await resp.json();
-        setEquipmentTypesList(prev => (prev.map(eqT => eqT.id === editId ? data : eqT)))
+        setEquipmentTypesList((prev) => {
+          if (initialData) {
+            return prev.map((t) => (t.id === initialData.id ? data : t));
+          } else {
+            return [data, ...prev];
+          }
+        });
         onClose();
       } else {
-        console.log("Ошибка изменения типа оборудования")
+        const errorData = await resp.json();
+        setError(errorData.error || "Ошибка сохранения");
       }
-    } catch (error) {
-      console.log(error);
+    } catch (err) {
+      setError("Ошибка сети");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <Modal size="xl" isOpen={isOpen} onClose={onClose} title={mode === "create" ? "Создать тип оборудования" : `Изменить ${form.name}`}>
+    <Modal
+      isOpen={isOpen}
+      title={initialData ? "Редактировать тип оборудования" : "Создать тип оборудования"}
+      onClose={onClose}
+      size="lg"
+    >
       {error && (
-        <p className="py-2 px-4 bg-red-100 text-sm text-red-600 rounded-lg mb-2 flex gap-2 items-center"><TriangleAlert/>{error}</p>
+        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+          {error}
+        </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
-        <ModalGroupField title="Характеристики">
-          <div className="space-y-1 mb-5">
-            <ModalField title="Название">
-              <input type="text" className={inputCls} value={form.name} onChange={e => setForm(prev => ({...prev, name: e.target.value}))}/>
-            </ModalField>
-            <ModalField title="Описание">
-              <textarea className={inputCls} rows={5} value={form.description} onChange={e => setForm(prev => ({...prev, description: e.target.value}))}/>
-            </ModalField>
-            <ModalField title="Дополнительные свойства" action={addField} actionText="+ Добавить">
-              <div className="mt-2 max-h-48 overflow-y-auto scrollbar-thin">
-                {form.attributesSchema && form.attributesSchema.map((f, i) => (
-                  <div key={i} className={`${i === selectPropI ? 'bg-indigo-100/60' : ''} rounded-lg px-4 py-2 grid gap-2 grid-cols-10 items-center`} onClick={() => setSelectPropI(i)}>
-                    <p className="text-xs text-gray-600 font-semibold">#{i + 1}</p>
-                    <input type="text" placeholder="Введите название свойства:"
-                      className={`${inputCls} col-span-7`} value={f.name} onChange={e => editField("name", e.target.value, i)}/>
-                    <div className="h-full flex justify-end items-center col-span-2">
-                      <div className="p-2 hover:bg-red-50 duration-300 rounded-lg cursor-pointer text-red-600"
-                        onClick={() => removeField(i)}>
-                        <Trash size={16}/>
+
+      <ModalField title="Название *">
+        <input
+          type="text"
+          className={inputCls}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Например: Ноутбук, Проектор, МФУ"
+        />
+      </ModalField>
+
+      <ModalField title="Описание">
+        <textarea
+          className={inputCls}
+          rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Общее описание типа оборудования..."
+        />
+      </ModalField>
+
+      {/* Характеристики */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Характеристики
+          </label>
+          <Button variant="secondary" size="sm" onClick={addAttribute}>
+            <Plus size={14} />
+            Добавить поле
+          </Button>
+        </div>
+
+        {attributes.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-dashed">
+            <p className="text-gray-400 text-sm">Нет добавленных характеристик</p>
+            <p className="text-gray-400 text-xs mt-1">
+              Нажмите "Добавить поле" чтобы создать спецификацию для оборудования
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {attributes.map((attr, index) => (
+              <div
+                key={index}
+                className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800/20"
+              >
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 text-gray-400 pt-1">
+                    <GripVertical size={16} />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                          Отображаемое название *
+                        </label>
+                        <input
+                          type="text"
+                          className={`${inputCls} text-sm`}
+                          value={attr.label || ""}
+                          onChange={(e) => updateAttribute(index, "label", e.target.value)}
+                          placeholder="Например: Объём ОЗУ"
+                        />
                       </div>
-                      <div className="p-2 hover:bg-indigo-50 duration-300 rounded-lg cursor-pointer text-indigo-600">
-                        <ArrowRight size={16}/>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                          Тип поля *
+                        </label>
+                        <select
+                          className={`${inputCls} text-sm`}
+                          value={attr.type}
+                          onChange={(e) => updateAttribute(index, "type", e.target.value as any)}
+                        >
+                          {fieldTypes.map((type) => (
+                            <option key={type.value} value={type.value}>
+                              {type.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
+
+                    {(attr.type === "string" || attr.type === "number") && (
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                          Единица измерения (необязательно)
+                        </label>
+                        <input
+                          type="text"
+                          className={`${inputCls} text-sm`}
+                          value={attr.unit || ""}
+                          onChange={(e) => updateAttribute(index, "unit", e.target.value)}
+                          placeholder="Например: ГБ, мм, шт"
+                        />
+                      </div>
+                    )}
+
+                    {attr.type === "select" && (
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 block mb-1">
+                          Варианты выбора (через запятую) *
+                        </label>
+                        <input
+                          type="text"
+                          className={`${inputCls} text-sm`}
+                          value={attr.options?.join(", ") || ""}
+                          onChange={(e) => updateSelectOptions(index, e.target.value)}
+                          placeholder="Например: DDR4, DDR5, LPDDR4"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
+                        <input
+                          type="checkbox"
+                          checked={attr.required || false}
+                          onChange={(e) => updateAttribute(index, "required", e.target.checked)}
+                          className="rounded"
+                        />
+                        Обязательное поле
+                      </label>
+                    </div>
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => removeAttribute(index)}
+                    className="text-red-500 hover:text-red-600 p-1 flex-shrink-0"
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
               </div>
-            </ModalField>
+            ))}
           </div>
-        </ModalGroupField>
-        <ModalGroupField title={selectPropI !== null && form.attributesSchema &&  form.attributesSchema[selectPropI] ? form.attributesSchema[selectPropI].name === "" ? 'Нет названия' : form.attributesSchema[selectPropI].name : "Свойство не выбрано"}>
-          {selectPropI !== null ? (
-            <ModalField title="Тип поля">
-              <select
-                className={selectCls}
-                value={form.attributesSchema?.[selectPropI]?.type || ""}
-                onChange={e => editField("type", e.target.value, selectPropI)}
-              >
-                {fieldTypes.map((t, i) => ( 
-                  <option key={i} value={t} className={optionCls}>{FieldTypeLabels[t]}</option>
-                ))}
-              </select>
-            </ModalField>
-          ) : (
-            <div className="h-full flex items-center">
-              <p className="text-gray-400 text-sm">Выберите свойство для просмотра и редактирования</p>
-            </div>
-          )}
-        </ModalGroupField>
+        )}
       </div>
-      
-      <Button className="ml-auto" onClick={mode === "create" ? () => handleCreate() : () => handleEdit()}>{mode === "create" ? "Создать" : "Изменить"} </Button>
+
+      <div className="flex justify-end gap-3 mt-6 pt-3 border-t">
+        <Button variant="secondary" onClick={onClose}>
+          Отмена
+        </Button>
+        <Button onClick={handleSubmit} loading={loading}>
+          {initialData ? "Сохранить" : "Создать"}
+        </Button>
+      </div>
     </Modal>
-  )
+  );
 }

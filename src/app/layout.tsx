@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Unbounded, Golos_Text } from "next/font/google";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -34,9 +33,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ConditionalHeader />
-            <div>
-              {children}
-            </div>
+            {children}
           </AuthProvider>
         </ThemeProvider>
       </body>

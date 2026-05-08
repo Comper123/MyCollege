@@ -1,11 +1,20 @@
 // ? Оборудование
 
 
-import { InferSelectModel, relations } from "drizzle-orm";
-import { integer, jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { InferSelectModel, relations, sql } from "drizzle-orm";
+import { integer, jsonb, pgEnum, pgSequence, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { rooms } from "./place";
 import { users } from "./users";
 
+// Определяем последовательность для инвентарных номеров
+export const inventoryNumberSeq = pgSequence("inventory_number_seq", {
+  startWith: 1,
+  increment: 1,
+  cache: 1
+});
+
+// Функция для генерации инвентарного номера
+export const generateInventoryNumber = sql<string>`'INV-' || EXTRACT(YEAR FROM NOW()) || '-' || LPAD(nextval('inventory_number_seq')::text, 10, '0')`;
 
 // & Enums
 export const equipmentStatusEnum = pgEnum("equipment_status", [
@@ -64,7 +73,7 @@ export const equipment = pgTable("equipment", {
   id:              uuid("id").defaultRandom().primaryKey(),
   // Инвентарный номер — уникальный, генерируется при создании
   // Формат: INV-{YEAR}-{SEQUENCE}, например INV-2024-00042
-  inventoryNumber: varchar("inventory_number", { length: 64 }).notNull().unique(), // unique() → уникальный индекс на уровне БД
+  inventoryNumber: varchar("inventory_number", { length: 64 }).notNull().unique().default(generateInventoryNumber), // unique() → уникальный индекс на уровне БД
   // QR-код хранится как строка (обычно просто inventoryNumber, но можно URL)
   // Сам PNG генерируется на лету или при создании записи
   qrCode:          text("qr_code").unique(), // тоже уникален
@@ -177,10 +186,14 @@ export type EquipmentStatus = typeof equipmentStatusEnum.enumValues[number];
 export type EquipmentLotStatus = typeof lotStatusEnum.enumValues[number];
 
 export interface AttributeSchema {
-  key:      string;   // "ram"
-  label:    string;   // "Объём ОЗУ"
-  type:     "string" | "number" | "boolean" | "select";
-  unit?:    string;   // "GB", "шт", "Вт"
+  name: string;      // техническое имя (например, "ram_size")
+  label: string;     // отображаемое имя (например, "Объём ОЗУ")
+  type: "string" | "number" | "boolean" | "select";
+  unit?: string;     // единица измерения (например, "ГБ", "мм")
   options?: string[]; // для type: "select"
   required?: boolean;
+}
+
+export interface CustomField {
+  name: string;
 }
