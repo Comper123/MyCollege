@@ -22,12 +22,6 @@ const fieldTypeIcons = {
   select: <List size={12} />,
 };
 
-const fieldTypeLabels = {
-  string: "Текст",
-  number: "Число",
-  boolean: "Да/Нет",
-  select: "Выбор из списка",
-};
 
 export default function EquipmentTypesPage() {
   const [equipmentTypesList, setEquipmentTypesList] = useState<EquipmentType[]>([]);
@@ -38,7 +32,6 @@ export default function EquipmentTypesPage() {
   const [isEditEqTypeOpen, setIsEditEqTypeOpen] = useState(false);
   const [isDeleteEqTypeOpen, setIsDeleteEqTypeOpen] = useState(false);
 
-  const [editEqTypeId, setEditEqTypeId] = useState("");
   const [deleteEqTypeId, setDeleteEqTypeId] = useState("");
   const [editedEqType, setEditedEqType] = useState<EquipmentType>();
 

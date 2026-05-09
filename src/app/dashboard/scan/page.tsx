@@ -12,10 +12,48 @@ export default function ScanPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isScannerReady, setIsScannerReady] = useState(false);
+  const [hasCamera, setHasCamera] = useState<boolean | null>(null);
+  const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCamera, setSelectedCamera] = useState<string>("");
   
   const scannerRef = useRef<any>(null);
   const containerId = "qr-reader-container";
+
+  // Проверка камер при загрузке
+  useEffect(() => {
+    const checkCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === "videoinput");
+        setAvailableCameras(videoDevices);
+        setHasCamera(videoDevices.length > 0);
+        
+        if (videoDevices.length > 0) {
+          setSelectedCamera(videoDevices[0].deviceId);
+        }
+      } catch (err) {
+        console.error("Error checking cameras:", err);
+        setHasCamera(false);
+      }
+    };
+    
+    checkCameras();
+    
+    // Запрашиваем разрешение на камеру при загрузке
+    const requestCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+        setCameraPermission(true);
+      } catch (err) {
+        console.error("Camera permission denied:", err);
+        setCameraPermission(false);
+      }
+    };
+    
+    requestCameraPermission();
+  }, []);
 
   // Останавливаем сканер при размонтировании
   useEffect(() => {
@@ -37,12 +75,24 @@ export default function ScanPage() {
     setError(null);
     setScanResult(null);
     
+    // Проверяем наличие камеры
+    if (!hasCamera) {
+      setError("Камера не найдена на устройстве");
+      return;
+    }
+    
+    // Проверяем разрешение
+    if (cameraPermission === false) {
+      setError("Нет разрешения на использование камеры. Пожалуйста, разрешите доступ в браузере.");
+      return;
+    }
+    
     // Ждём, пока DOM обновится
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     const container = document.getElementById(containerId);
     if (!container) {
-      setError("Элемент для сканера не найден. Пожалуйста, обновите страницу.");
+      setError("Элемент для сканера не найден");
       return;
     }
 
@@ -62,19 +112,23 @@ export default function ScanPage() {
     setIsScanning(true);
 
     try {
-      // Динамически импортируем html5-qrcode
+      // Динамический импорт html5-qrcode
       const { Html5Qrcode } = await import("html5-qrcode");
-      
-      scannerRef.current = new Html5Qrcode(containerId);
       
       const config = {
         fps: 10,
         qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
+        showTorchButtonIfSupported: true,
       };
 
+      scannerRef.current = new Html5Qrcode(containerId);
+      
+      // Используем выбранную камеру или по умолчанию
+      const cameraId = selectedCamera || { facingMode: "environment" };
+      
       await scannerRef.current.start(
-        { facingMode: "environment" },
+        cameraId,
         config,
         (decodedText: string) => {
           handleScanSuccess(decodedText);
@@ -89,14 +143,18 @@ export default function ScanPage() {
       
       if (err instanceof Error) {
         if (err.name === "NotAllowedError") {
-          setError("Нет доступа к камере. Пожалуйста, разрешите доступ к камере.");
+          setError("Нет доступа к камере. Пожалуйста, разрешите доступ к камере в настройках браузера.");
         } else if (err.name === "NotFoundError") {
-          setError("Камера не найдена. Убедитесь, что камера подключена.");
+          setError("Камера не найдена. Убедитесь, что камера подключена и работает.");
+        } else if (err.name === "NotReadableError") {
+          setError("Камера уже используется другим приложением. Закройте другие программы, использующие камеру.");
+        } else if (err.name === "OverconstrainedError") {
+          setError("Не удалось найти камеру с требуемыми характеристиками.");
         } else {
-          setError("Не удалось запустить сканер. " + err.message);
+          setError(`Ошибка: ${err.message}`);
         }
       } else {
-        setError("Не удалось получить доступ к камере. Пожалуйста, проверьте разрешения.");
+        setError("Не удалось запустить сканер. Проверьте подключение камеры.");
       }
       
       setIsScanning(false);
@@ -119,7 +177,6 @@ export default function ScanPage() {
   };
 
   const handleScanSuccess = async (decodedText: string) => {
-    // Останавливаем сканер после успешного сканирования
     await stopScanner();
     setScanResult(decodedText);
     
@@ -133,7 +190,7 @@ export default function ScanPage() {
     setIsLoading(true);
     
     try {
-      const resp = await fetch(`/api/equipment/search?inventoryNumber=${inventoryNumber}`);
+      const resp = await fetch(`/api/equipment/search?inventoryNumber=${encodeURIComponent(inventoryNumber)}`);
       if (resp.ok) {
         const equipment = await resp.json();
         router.push(`/dashboard/equipment/${equipment.id}`);
@@ -161,7 +218,7 @@ export default function ScanPage() {
     setError(null);
     
     try {
-      const resp = await fetch(`/api/equipment/search?inventoryNumber=${inventoryNumber}`);
+      const resp = await fetch(`/api/equipment/search?inventoryNumber=${encodeURIComponent(inventoryNumber)}`);
       if (resp.ok) {
         const equipment = await resp.json();
         router.push(`/dashboard/equipment/${equipment.id}`);
@@ -175,10 +232,18 @@ export default function ScanPage() {
     }
   };
 
-  const handleReset = () => {
-    setError(null);
-    setScanResult(null);
-    setIsScanning(false);
+  const requestCameraAgain = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop());
+      setCameraPermission(true);
+      setError(null);
+      startScanner();
+    } catch (err) {
+      console.error("Camera permission denied:", err);
+      setCameraPermission(false);
+      setError("Разрешите доступ к камере в настройках браузера и попробуйте снова.");
+    }
   };
 
   return (
@@ -195,7 +260,27 @@ export default function ScanPage() {
             </p>
           </div>
 
-          {/* Контейнер для сканера - всегда рендерится */}
+          {/* Выбор камеры */}
+          {availableCameras.length > 1 && !isScanning && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Выберите камеру
+              </label>
+              <select
+                value={selectedCamera}
+                onChange={(e) => setSelectedCamera(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800"
+              >
+                {availableCameras.map((camera) => (
+                  <option key={camera.deviceId} value={camera.deviceId}>
+                    {camera.label || `Камера ${camera.deviceId.slice(0, 5)}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Контейнер для сканера */}
           {(isScanning || error) && (
             <div className="space-y-4">
               <div 
@@ -224,10 +309,20 @@ export default function ScanPage() {
           {/* Кнопка старта */}
           {!isScanning && !scanResult && !error && (
             <div className="text-center">
-              <Button onClick={startScanner} size="lg" className="px-8">
-                <Camera size={18} />
-                Начать сканирование
-              </Button>
+              {cameraPermission === false ? (
+                <div className="text-center">
+                  <p className="text-red-500 mb-3">Нет доступа к камере</p>
+                  <Button onClick={requestCameraAgain}>
+                    <Camera size={18} />
+                    Запросить доступ к камере
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={startScanner} size="lg" className="px-8">
+                  <Camera size={18} />
+                  Начать сканирование
+                </Button>
+              )}
               <p className="text-xs text-gray-400 mt-3">
                 Потребуется доступ к камере
               </p>
@@ -247,7 +342,10 @@ export default function ScanPage() {
                   <Loader2 size={24} className="animate-spin text-indigo-500" />
                 </div>
               )}
-              <Button variant="secondary" size="sm" onClick={handleReset} className="mt-4">
+              <Button variant="secondary" size="sm" onClick={() => {
+                setScanResult(null);
+                setError(null);
+              }} className="mt-4">
                 Сканировать другой
               </Button>
             </div>
@@ -271,7 +369,10 @@ export default function ScanPage() {
                     <Button 
                       variant="secondary" 
                       size="sm" 
-                      onClick={handleReset}
+                      onClick={() => {
+                        setError(null);
+                        setScanResult(null);
+                      }}
                     >
                       Отмена
                     </Button>
@@ -290,18 +391,31 @@ export default function ScanPage() {
               <input
                 type="text"
                 name="inventoryNumber"
-                placeholder="INV-2024-00001"
+                placeholder="INV-2024-0000000001"
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                pattern="INV-\d{4}-\d{5}"
-                title="Формат: INV-2024-00001"
+                pattern="INV-\d{4}-\d{10}"
+                title="Формат: INV-2024-0000000001"
               />
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? <Loader2 size={16} className="animate-spin" /> : "Найти"}
               </Button>
             </form>
             <p className="text-xs text-gray-400 text-center mt-2">
-              Формат: INV-ГГГГ-XXXXX (например, INV-2024-00001)
+              Формат: INV-ГГГГ-XXXXXXXXXX (например, INV-2024-0000000001)
             </p>
+          </div>
+
+          {/* Инструкция */}
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+            <p className="text-sm text-blue-700 dark:text-blue-400">
+              💡 Если камера не работает:
+            </p>
+            <ul className="text-xs text-blue-600 dark:text-blue-300 mt-2 space-y-1">
+              <li>• Разрешите доступ к камере в браузере</li>
+              <li>• Проверьте, что камера работает в других приложениях</li>
+              <li>• Используйте HTTPS или localhost (в некоторых браузерах)</li>
+              <li>• Попробуйте другой браузер (Chrome, Edge, Firefox)</li>
+            </ul>
           </div>
         </div>
       </Block>

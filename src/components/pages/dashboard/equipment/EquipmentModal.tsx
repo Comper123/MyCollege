@@ -6,8 +6,7 @@ import { inputCls } from "@/components/ui/forms/Input";
 import SelectSearch, { Option } from "@/components/ui/forms/SelectSearch";
 import Button from "@/components/ui/Button";
 import { FullEquipment } from "@/types/equipment";
-import { EquipmentType, Room, User, fio } from "@/lib/db/schema";
-import { AttributeSchema } from "@/types/equipmentTypes";
+import { AttributeSchema, EquipmentType, Room, User, fio } from "@/lib/db/schema";
 import { 
   Info, 
   Cpu, 

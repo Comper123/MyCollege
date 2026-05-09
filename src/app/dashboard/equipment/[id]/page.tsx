@@ -12,7 +12,7 @@ import {
   Trash, 
   QrCode, 
   MapPin, 
-  User, 
+  User as UserIcon, 
   Box, 
   Calendar,
   Barcode,
@@ -29,7 +29,7 @@ import {
   Cpu
 } from "lucide-react";
 import { FullEquipment } from "@/types/equipment";
-import { fio } from "@/lib/db/schema";
+import { fio, User } from "@/lib/db/schema";
 import { AttributeSchema, EquipmentMovement } from "@/lib/db/schema/equipment";
 import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 import EquipmentModal from "@/components/pages/dashboard/equipment/EquipmentModal";
@@ -197,7 +197,7 @@ export default function EquipmentDetailPage() {
     {
       title: "Кто переместил",
       key: "movedBy",
-      render: (value) => <span className="text-sm">{fio(value as any) || "—"}</span>,
+      render: (value) => <span className="text-sm">{value && fio(value as User) || "—"}</span>,
     },
     {
       title: "Причина",

@@ -1,7 +1,7 @@
 // ? Расположение объектов 
 
 
-import { pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { InferSelectModel, relations } from "drizzle-orm";
 
@@ -13,6 +13,7 @@ export const rooms = pgTable("rooms", {
   description: text("description"),
   attached_lab: uuid("attached_lab_id").references(() => users.id, {onDelete: 'no action'}),
   attached_teacher: uuid("attached_teacher_id").references(() => users.id, {onDelete: 'no action'}),
+  createdAt: timestamp("createdAt").defaultNow()
 })
 
 // & Relations

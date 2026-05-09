@@ -1,11 +1,10 @@
 "use client";
 
 import Modal from "@/components/ui/Modal";
-import { FullLot } from "@/types/equipment";
+import { FullEquipment, FullLot } from "@/types/equipment";
 import { formatDateTime } from "@/utils/datetime/dateFormatter";
 import { fio } from "@/lib/db/schema";
 import { Table, Column } from "@/components/ui/Table";
-import { Equipment } from "@/lib/db/schema/equipment";
 import { Package, Calendar, User, Building2, CreditCard, Hash } from "lucide-react";
 import SimpleBulkQRPrint from "./BulkQRPrint";
 
@@ -25,31 +24,35 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 export default function LotDetailModal({ isOpen, onClose, lot }: Props) {
   if (!lot) return null;
 
-  const equipmentColumns: Column<Equipment>[] = [
+  const equipmentColumns: Column<FullEquipment>[] = [
     {
       title: "Инв. номер",
       key: "inventoryNumber",
-      render: (value) => <span className="font-mono text-xs">{value as string || "—"}</span>,
+      render: (value: unknown, row: FullEquipment) => <span className="font-mono text-xs">{row.inventoryNumber || "—"}</span>,
     },
     {
       title: "Название",
       key: "name",
-      render: (value) => <span className="font-medium">{value as string}</span>,
+      render: (value: unknown, row: FullEquipment) => <span className="font-medium">{row.name || "—"}</span>,
     },
     {
       title: "Кабинет",
-      key: "room",
-      render: (value, row) => (row as any).room?.number || "—",
+      key: "roomId",
+      render: (_value: unknown, row: FullEquipment) => (
+        <span>{row.room?.number || "—"}</span>
+      ),
     },
     {
       title: "Ответственный",
-      key: "responsible",
-      render: (value, row) => value && fio((row as any).responsible) || "—",
+      key: "responsibleId",
+      render: (_value: unknown, row: FullEquipment) => (
+        <span>{row.responsible ? fio(row.responsible) : "—"}</span>
+      ),
     },
     {
       title: "Статус",
       key: "status",
-      render: (value) => {
+      render: (_value: unknown, row: FullEquipment) => {
         const statusMap: Record<string, string> = {
           active: "В эксплуатации",
           maintenance: "На обслуживании",
@@ -57,7 +60,7 @@ export default function LotDetailModal({ isOpen, onClose, lot }: Props) {
           reserved: "Зарезервировано",
           written_off: "Списано",
         };
-        return statusMap[value as string] || value;
+        return statusMap[row.status] || row.status || "—";
       },
     },
   ];
@@ -182,7 +185,7 @@ export default function LotDetailModal({ isOpen, onClose, lot }: Props) {
           {lot.items && lot.items.length > 0 ? (
             <Table 
               columns={equipmentColumns} 
-              data={lot.items as any[]} 
+              data={lot.items} 
               keyExtractor={(row) => row.id}
             />
           ) : (

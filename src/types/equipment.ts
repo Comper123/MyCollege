@@ -7,6 +7,7 @@ export interface FullEquipment extends Equipment {
   room: Room | null;
   responsible: User | null;
   lot: FullLot | null;
+  attributes: Record<string, string | number | boolean> | null;
 }
 
 export interface FullLot extends EquipmentLot {

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ ok: true, role: user.role })
   response.cookies.set('session', token, {
     httpOnly: true,   // JS на клиенте не видит cookie — защита от XSS
-    secure:   true,
+    // secure:   true,
     sameSite: 'lax',
     maxAge:   60 * 60 * 24 * 7, // 7 дней в секундах
     path:     '/',

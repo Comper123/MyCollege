@@ -169,7 +169,7 @@ export default function RoomDetailPage() {
     {
       title: "Модель",
       key: "model",
-      render: (value) => value || "—",
+      render: (value) => value?.toString() || "—",
     },
     {
       title: "Статус",

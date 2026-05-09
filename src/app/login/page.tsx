@@ -30,6 +30,7 @@ export default function LoginPage() {
         await refetchUser();
       } else {
         const data = await resp.json();
+        console.log(data)
         setError(data.error);
       }
     } catch (error) {

@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Modal, { ModalField } from "@/components/ui/Modal";
 import { inputCls } from "@/components/ui/forms/Input";
 import Button from "@/components/ui/Button";
-import { EquipmentType } from "@/lib/db/schema";
-import { AttributeSchema, CustomField } from "@/types/equipmentTypes";
+import { AttributeSchema, EquipmentType } from "@/lib/db/schema";
 import { Plus, Trash, GripVertical, Hash, Type, ToggleLeft, List } from "lucide-react";
 
 interface Props {
@@ -134,7 +133,7 @@ export default function EquipmentTypeModal({
         const errorData = await resp.json();
         setError(errorData.error || "Ошибка сохранения");
       }
-    } catch (err) {
+    } catch {
       setError("Ошибка сети");
     } finally {
       setLoading(false);
@@ -190,7 +189,7 @@ export default function EquipmentTypeModal({
           <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/30 rounded-lg border border-dashed">
             <p className="text-gray-400 text-sm">Нет добавленных характеристик</p>
             <p className="text-gray-400 text-xs mt-1">
-              Нажмите "Добавить поле" чтобы создать спецификацию для оборудования
+              {`Нажмите "Добавить поле" чтобы создать спецификацию для оборудования`}
             </p>
           </div>
         ) : (

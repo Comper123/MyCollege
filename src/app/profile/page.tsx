@@ -118,8 +118,7 @@ export default function ProfilePage() {
     setSavingPwd(true);
     try {
       const res = await fetch("/api/profile/password", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
         credentials: "include",
         body: JSON.stringify({
           currentPassword: passwords.currentPassword,

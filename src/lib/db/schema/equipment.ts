@@ -192,6 +192,7 @@ export interface AttributeSchema {
   unit?: string;     // единица измерения (например, "ГБ", "мм")
   options?: string[]; // для type: "select"
   required?: boolean;
+  description?: string;
 }
 
 export interface CustomField {
