@@ -1,7 +1,7 @@
 -- ============================================================
 -- СОЗДАНИЕ ТИПОВ ENUM
 -- ============================================================
-
+-- Полина любит илью
 CREATE TYPE equipment_status AS ENUM (
     'active',
     'maintenance',
@@ -76,6 +76,7 @@ CREATE TABLE users (
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     fathername character varying(50)
 );
+select * from users;
 
 CREATE TABLE "equipmentType" (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
@@ -84,7 +85,7 @@ CREATE TABLE "equipmentType" (
     "attributesSchema" jsonb[],
     "createdAt" timestamp without time zone DEFAULT now()
 );
-
+select * from "equipmentType";
 CREATE TABLE rooms (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     number character varying(6) NOT NULL UNIQUE,
@@ -95,6 +96,7 @@ CREATE TABLE rooms (
     FOREIGN KEY (attached_lab_id) REFERENCES users(id),
     FOREIGN KEY (attached_teacher_id) REFERENCES users(id)
 );
+select * from "rooms";
 
 CREATE TABLE equipment_lot (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
@@ -114,7 +116,7 @@ CREATE TABLE equipment_lot (
     FOREIGN KEY (equipment_type_id) REFERENCES "equipmentType"(id),
     FOREIGN KEY (accepted_by_id) REFERENCES users(id) ON DELETE SET NULL
 );
-
+select * from "equipment_lot";
 CREATE TABLE equipment (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
     inventory_number character varying(64) DEFAULT ('INV-' || EXTRACT(year FROM now()) || '-' || LPAD(nextval('inventory_number_seq')::text, 10, '0')) NOT NULL UNIQUE,
@@ -143,6 +145,7 @@ CREATE TABLE equipment (
     FOREIGN KEY (responsible_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (written_off_by_id) REFERENCES users(id) ON DELETE SET NULL
 );
+select * from "equipment";
 
 CREATE TABLE equipment_movement (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
@@ -157,6 +160,7 @@ CREATE TABLE equipment_movement (
     FOREIGN KEY (to_room_id) REFERENCES rooms(id) ON DELETE SET NULL,
     FOREIGN KEY (moved_by_id) REFERENCES users(id) ON DELETE SET NULL
 );
+select * from "equipment_movement";
 
 CREATE TABLE requests (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
@@ -179,6 +183,7 @@ CREATE TABLE requests (
     FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_to_id) REFERENCES users(id) ON DELETE SET NULL
 );
+select * from "requests";
 
 CREATE TABLE sessions (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
@@ -190,6 +195,7 @@ CREATE TABLE sessions (
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+select * from "sessions";
 
 CREATE TABLE request_status_log (
     id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
@@ -200,7 +206,7 @@ CREATE TABLE request_status_log (
     changed_at timestamp without time zone DEFAULT now(),
     notes text
 );
-
+select * from "sessions";
 -- ============================================================
 -- СОЗДАНИЕ ФУНКЦИЙ И ТРИГГЕРОВ
 -- ============================================================
@@ -433,3 +439,21 @@ INSERT INTO requests (id, title, description, type, priority, status, equipment_
 -- ============================================================
 
 SELECT setval('inventory_number_seq', 10, true);
+
+CREATE VIEW equipment_by_room AS
+SELECT 
+  r.id as room_id,
+  r.number as room_number,
+  r.description as room_description,
+  COUNT(e.id) as total_equipment,
+  COUNT(CASE WHEN e.status = 'active' THEN 1 END) as active_count,
+  COUNT(CASE WHEN e.status = 'maintenance' THEN 1 END) as maintenance_count,
+  COUNT(CASE WHEN e.status = 'broken' THEN 1 END) as broken_count,
+  COUNT(CASE WHEN e.status = 'reserved' THEN 1 END) as reserved_count,
+  COUNT(CASE WHEN e.status = 'written_off' THEN 1 END) as written_off_count,
+  COALESCE(SUM(el.unit_price_cents), 0) as total_value_cents
+FROM rooms r
+LEFT JOIN equipment e ON e.room_id = r.id
+LEFT JOIN equipment_lot el ON e.lot_id = el.id
+GROUP BY r.id, r.number, r.description
+ORDER BY total_equipment DESC;
