@@ -26,7 +26,9 @@ import {
   Package,
   Building2,
   UserCircle,
-  Cpu
+  Cpu,
+  FileWarning,
+  MoveRight
 } from "lucide-react";
 import { FullEquipment } from "@/types/equipment";
 import { fio, User } from "@/lib/db/schema";
@@ -35,6 +37,9 @@ import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 import EquipmentModal from "@/components/pages/dashboard/equipment/EquipmentModal";
 import QRCodeModal from "@/components/pages/dashboard/equipment/QRCodeModal";
 import { formatDateTime } from "@/utils/datetime/dateFormatter";
+import RequestModal from "@/components/pages/dashboard/requests/RequestModal";
+import EquipmentRequests from "@/components/pages/dashboard/equipment/EquipmentRequest";
+import EquipmentMoveModal from "@/components/pages/dashboard/equipment/EquipmentMoveModal";
 
 interface MovementWithDetails extends EquipmentMovement {
   fromRoom: { number: string } | null;
@@ -87,6 +92,8 @@ export default function EquipmentDetailPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
 
   const loadEquipment = async () => {
     setIsLoading(true);
@@ -249,6 +256,26 @@ export default function EquipmentDetailPage() {
           </button>
           
           <div className="flex gap-2 print:hidden">
+            {(equipment.status === "active" || equipment.status === "maintenance") && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => setIsMoveModalOpen(true)}
+                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-indigo-200"
+              >
+                <MoveRight size={14} />
+                Переместить
+              </Button>
+            )}
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={() => setIsRequestModalOpen(true)}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              <FileWarning size={14} />
+              Заявка на ремонт
+            </Button>
             <Button variant="secondary" size="sm" onClick={handleExport}>
               <Download size={14} />
               Экспорт
@@ -410,6 +437,13 @@ export default function EquipmentDetailPage() {
                 />
               </div>
             )}
+
+            <div className="border rounded-xl p-5 bg-white dark:bg-gray-900/30">
+              <EquipmentRequests 
+                equipmentId={equipment.id}
+                onCreateRequest={() => setIsRequestModalOpen(true)}
+              />
+            </div>
           </div>
 
           {/* Правая колонка - 1/3 */}
@@ -556,6 +590,18 @@ export default function EquipmentDetailPage() {
       </Block>
 
       {/* Модалки */}
+      {/* Модалка создания заявки */}
+      <RequestModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        equipment={equipment}
+        onSuccess={() => {
+          setIsRequestModalOpen(false);
+          // Опционально: показать уведомление об успешном создании
+          alert("Заявка успешно создана");
+        }}
+      />
+
       <EquipmentModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -566,6 +612,20 @@ export default function EquipmentDetailPage() {
         onSuccess={() => {
           loadEquipment();
           setIsEditModalOpen(false);
+        }}
+      />
+
+      <EquipmentMoveModal
+        isOpen={isMoveModalOpen}
+        onClose={() => setIsMoveModalOpen(false)}
+        equipmentId={equipment.id}
+        equipmentName={equipment.name}
+        currentRoomId={equipment.roomId}
+        currentRoomNumber={equipment.room?.number || null}
+        onSuccess={() => {
+          loadEquipment();
+          loadMovements();
+          setIsMoveModalOpen(false);
         }}
       />
 

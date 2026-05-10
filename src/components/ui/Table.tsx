@@ -9,7 +9,7 @@ export interface Column<T> {
 interface TableProps<T> {
   columns: Column<T>[];
   data: T[];
-  keyExtractor: (row: T) => string;
+  keyExtractor: (row: T, index?: number) => string;
 }
 
 export function Table<T>({ columns, data, keyExtractor }: TableProps<T>) {

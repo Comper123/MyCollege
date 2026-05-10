@@ -1,0 +1,206 @@
+export interface ReportView {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  query: string;
+  columns: {
+    key: string;
+    title: string;
+    format?: 'number' | 'currency' | 'date' | 'percentage' | 'text';
+  }[];
+}
+
+export const reportViews: ReportView[] = [
+  {
+    id: "equipment_by_room",
+    name: "Оборудование по кабинетам",
+    description: "Распределение оборудования по кабинетам с детализацией по статусам",
+    icon: "🏢",
+    color: "indigo",
+    query: "SELECT * FROM equipment_by_room",
+    columns: [
+      { key: "room_number", title: "Кабинет", format: "text" },
+      { key: "room_description", title: "Описание", format: "text" },
+      { key: "total_equipment", title: "Всего", format: "number" },
+      { key: "active_count", title: "В эксплуатации", format: "number" },
+      { key: "maintenance_count", title: "На обслуживании", format: "number" },
+      { key: "broken_count", title: "Неисправно", format: "number" },
+      { key: "reserved_count", title: "Зарезервировано", format: "number" },
+      { key: "written_off_count", title: "Списано", format: "number" },
+      { key: "total_value_cents", title: "Общая стоимость", format: "currency" },
+    ],
+  },
+  {
+    id: "equipment_by_type",
+    name: "Оборудование по типам",
+    description: "Статистика по каждому типу оборудования",
+    icon: "📦",
+    color: "blue",
+    query: "SELECT * FROM equipment_by_type",
+    columns: [
+      { key: "type_name", title: "Тип", format: "text" },
+      { key: "type_description", title: "Описание", format: "text" },
+      { key: "total_equipment", title: "Всего", format: "number" },
+      { key: "active_count", title: "В эксплуатации", format: "number" },
+      { key: "maintenance_count", title: "На обслуживании", format: "number" },
+      { key: "broken_count", title: "Неисправно", format: "number" },
+    ],
+  },
+  {
+    id: "equipment_status_stats",
+    name: "Состояние оборудования",
+    description: "Статистика по статусам оборудования",
+    icon: "📊",
+    color: "emerald",
+    query: "SELECT * FROM equipment_status_stats",
+    columns: [
+      { key: "status", title: "Статус", format: "text" },
+      { key: "count", title: "Количество", format: "number" },
+      { key: "percentage", title: "Процент", format: "percentage" },
+    ],
+  },
+  {
+    id: "requests_by_status",
+    name: "Заявки по статусам",
+    description: "Анализ заявок по статусам",
+    icon: "📋",
+    color: "amber",
+    query: "SELECT * FROM requests_by_status",
+    columns: [
+      { key: "status", title: "Статус", format: "text" },
+      { key: "count", title: "Количество", format: "number" },
+      { key: "percentage", title: "Процент", format: "percentage" },
+      { key: "oldest_request", title: "Старейшая", format: "date" },
+      { key: "newest_request", title: "Новейшая", format: "date" },
+    ],
+  },
+  {
+    id: "requests_daily_trend",
+    name: "Динамика заявок",
+    description: "Ежедневная динамика заявок за 30 дней",
+    icon: "📈",
+    color: "purple",
+    query: "SELECT * FROM requests_daily_trend",
+    columns: [
+      { key: "date", title: "Дата", format: "date" },
+      { key: "created_count", title: "Создано", format: "number" },
+      { key: "completed_count", title: "Выполнено", format: "number" },
+      { key: "rejected_count", title: "Отклонено", format: "number" },
+      { key: "completion_rate", title: "Процент выполнения", format: "percentage" },
+    ],
+  },
+  {
+    id: "movement_history",
+    name: "История перемещений",
+    description: "Все перемещения оборудования",
+    icon: "🔄",
+    color: "cyan",
+    query: "SELECT * FROM movement_history",
+    columns: [
+      { key: "moved_at", title: "Дата", format: "date" },
+      { key: "equipment_name", title: "Оборудование", format: "text" },
+      { key: "inventory_number", title: "Инв. номер", format: "text" },
+      { key: "from_room_number", title: "Из кабинета", format: "text" },
+      { key: "to_room_number", title: "В кабинет", format: "text" },
+      { key: "reason", title: "Причина", format: "text" },
+      { key: "moved_by_name", title: "Кто переместил", format: "text" },
+    ],
+  },
+  {
+    id: "equipment_value",
+    name: "Стоимость оборудования",
+    description: "Финансовый анализ по типам",
+    icon: "💰",
+    color: "green",
+    query: "SELECT * FROM equipment_value",
+    columns: [
+      { key: "type_name", title: "Тип", format: "text" },
+      { key: "equipment_count", title: "Количество", format: "number" },
+      { key: "total_value_cents", title: "Общая стоимость", format: "currency" },
+      { key: "avg_value_cents", title: "Средняя цена", format: "currency" },
+      { key: "min_value_cents", title: "Мин. цена", format: "currency" },
+      { key: "max_value_cents", title: "Макс. цена", format: "currency" },
+    ],
+  },
+  {
+    id: "equipment_warranty",
+    name: "Гарантийное оборудование",
+    description: "Оборудование с информацией о гарантии",
+    icon: "🔧",
+    color: "orange",
+    query: "SELECT * FROM equipment_warranty",
+    columns: [
+      { key: "name", title: "Оборудование", format: "text" },
+      { key: "inventory_number", title: "Инв. номер", format: "text" },
+      { key: "equipment_type", title: "Тип", format: "text" },
+      { key: "room_number", title: "Кабинет", format: "text" },
+      { key: "warranty_until", title: "Гарантия до", format: "date" },
+      { key: "warranty_status", title: "Статус", format: "text" },
+      { key: "days_left", title: "Дней осталось", format: "number" },
+      { key: "responsible_person", title: "Ответственный", format: "text" },
+    ],
+  },
+  {
+    id: "user_activity",
+    name: "Активность пользователей",
+    description: "Статистика активности по пользователям",
+    icon: "👥",
+    color: "pink",
+    query: "SELECT * FROM user_activity",
+    columns: [
+      { key: "user_name", title: "Пользователь", format: "text" },
+      { key: "email", title: "Email", format: "text" },
+      { key: "role", title: "Роль", format: "text" },
+      { key: "requests_created", title: "Создано заявок", format: "number" },
+      { key: "equipment_responsible", title: "Оборудования", format: "number" },
+      { key: "movements_made", title: "Перемещений", format: "number" },
+      { key: "last_request_date", title: "Последняя заявка", format: "date" },
+    ],
+  },
+  {
+    id: "monthly_summary",
+    name: "Ежемесячная сводка",
+    description: "Добавление оборудования по месяцам",
+    icon: "📅",
+    color: "teal",
+    query: "SELECT * FROM monthly_summary",
+    columns: [
+      { key: "month", title: "Месяц", format: "date" },
+      { key: "total_equipment_added", title: "Добавлено всего", format: "number" },
+      { key: "active_added", title: "Активных", format: "number" },
+      { key: "total_value_added_cents", title: "Общая стоимость", format: "currency" },
+    ],
+  },
+  {
+    id: "equipment_no_responsible",
+    name: "Оборудование без ответственного",
+    description: "Незакрепленное оборудование",
+    icon: "❓",
+    color: "red",
+    query: "SELECT * FROM equipment_no_responsible",
+    columns: [
+      { key: "name", title: "Оборудование", format: "text" },
+      { key: "inventory_number", title: "Инв. номер", format: "text" },
+      { key: "equipment_type", title: "Тип", format: "text" },
+      { key: "room_number", title: "Кабинет", format: "text" },
+      { key: "status", title: "Статус", format: "text" },
+      { key: "created_at", title: "Дата создания", format: "date" },
+    ],
+  },
+  {
+    id: "requests_by_priority",
+    name: "Заявки по приоритетам",
+    description: "Анализ заявок по приоритетам и статусам",
+    icon: "🎯",
+    color: "violet",
+    query: "SELECT * FROM requests_by_priority",
+    columns: [
+      { key: "priority", title: "Приоритет", format: "text" },
+      { key: "status", title: "Статус", format: "text" },
+      { key: "count", title: "Количество", format: "number" },
+      { key: "avg_days_to_resolve", title: "Ср. дней на решение", format: "number" },
+    ],
+  },
+];

@@ -19,7 +19,8 @@ import {
   BarChart3,
   Menu,
   X,
-  Scan
+  Scan,
+  Package
 } from "lucide-react";
 import { UserRole } from "@/lib/db/schema";
 import { SelectUser } from "@/lib/auth/types";
@@ -48,11 +49,10 @@ const navItems: NavItemType[] = [
     icon: <Monitor strokeWidth={1.5} size={18} />,
   },
   {
-    href: "/dashboard/equipment",
+    href: "/dashboard/my-equipment",
     label: "Моё оборудование",
     accessRoles: ["teacher"],
-    icon: <Monitor strokeWidth={1.5} size={18} />,
-    query: "?isMy=true",
+    icon: <Package strokeWidth={1.5} size={18} />,
   },
   {
     href: "/dashboard/rooms",
