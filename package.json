@@ -15,7 +15,11 @@
     "db:update": "drizzle-kit generate && drizzle-kit migrate && drizzle-kit push",
     "create-admin": "npx tsx src/scripts/create-admin.ts",
     "db:create-views": "tsx ./scripts/create-views.ts",
-    "db:drop-views": "tsx ./scripts/create-views.ts drop"
+    "db:drop-views": "tsx ./scripts/create-views.ts drop",
+    "test": "jest",
+    "test:report": "jest --coverage --coverageReporters=html --coverageReporters=text",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
@@ -42,9 +46,13 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcrypt": "^6.0.0",
     "@types/chart.js": "^2.9.41",
     "@types/cors": "^2.8.19",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
@@ -53,8 +61,11 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "qrcode-terminal": "^0.12.0",
     "tailwindcss": "^3.4.19",
+    "ts-jest": "^29.4.9",
     "tsx": "^4.21.0",
     "typescript": "^5"
   }

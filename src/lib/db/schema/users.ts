@@ -61,7 +61,7 @@ export type Session  = typeof sessions.$inferSelect;
 
 
 // & Functions
-export function fio(u: User): string {
+export function fio(u: User | null): string {
   if (u === null) return "";
   return `${u.lastname} ${u.firstname} ${u.fathername || ''}`
 } 
