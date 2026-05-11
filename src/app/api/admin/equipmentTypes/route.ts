@@ -9,7 +9,7 @@ export const GET = withAuth(async (req, ctx, user) => {
     orderBy: (types, { desc }) => [desc(types.createdAt)],
   });
   return NextResponse.json(types);
-}, ["admin"]);
+}, ["admin", "laborant"]);
 
 export const POST = withAuth(async (req, ctx, user) => {
   const body = await req.json();

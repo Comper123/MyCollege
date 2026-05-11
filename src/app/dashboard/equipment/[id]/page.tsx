@@ -124,6 +124,16 @@ export default function EquipmentDetailPage() {
     }
   };
 
+  const regenerateQR = async () => {
+    const resp = await fetch(`/api/equipment/${equipment?.id}/regenerate-qr`, {
+      method: "POST",
+    });
+    if (resp.ok) {
+      loadEquipment();
+      alert("QR-код перегенерирован");
+    }
+  };
+
   useEffect(() => {
     loadEquipment();
     loadMovements();
@@ -288,13 +298,17 @@ export default function EquipmentDetailPage() {
               <QrCode size={14} />
               QR-код
             </Button>
-            <ProtectedBlock allowedRoles={["admin", "laborant"]}>
+            <ProtectedBlock allowedRoles={["admin", "laborant"]} isHide>
               <Button variant="secondary" size="sm" onClick={() => setIsEditModalOpen(true)}>
                 <Edit size={14} />
                 Редактировать
               </Button>
+              <Button variant="secondary" size="sm" onClick={regenerateQR}>
+                <QrCode size={14} />
+                Перегенерировать QR
+              </Button>
             </ProtectedBlock>
-            <ProtectedBlock allowedRoles={["admin"]}>
+            <ProtectedBlock allowedRoles={["admin"]} isHide>
               <Button variant="danger" size="sm" onClick={() => setIsDeleteModalOpen(true)}>
                 <Trash size={14} />
                 Удалить

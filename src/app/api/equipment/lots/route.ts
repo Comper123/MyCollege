@@ -1,9 +1,10 @@
 import { withAuth } from "@/lib/auth/withAuth";
 import { db } from "@/lib/db/db";
 import { equipment, equipmentLots, EquipmentLotStatus } from "@/lib/db/schema";
-import { generateQRCode } from "@/lib/equipment/inventory";
 import { NextResponse } from "next/server";
 import { eq, desc, ilike, and, sql } from "drizzle-orm";
+import { generateEquipmentQRCode } from "@/lib/equipment/qrcode";
+import { generateInventoryNumber } from "@/lib/equipment/inventory";
 
 export const GET = withAuth(async (req) => {
   const url = new URL(req.url);
@@ -89,23 +90,34 @@ export const POST = withAuth(async (req, ctx, user) => {
       // Инвентарные номера генерируются автоматически через DEFAULT
       const items = [];
       for (let i = 0; i < quantity; i++) {
-        const qrCode = await generateQRCode(`temp-${Date.now()}-${i}`); // Временный QR
+        const inventoryNumber = await generateInventoryNumber();
         
+        // Генерируем QR-код на основе ID оборудования (которого ещё нет!)
+        // Поэтому сначала создаём equipment без QR, потом обновляем
         const [item] = await tx
           .insert(equipment)
           .values({
+            inventoryNumber,
             lotId: lot.id,
             equipmentTypeId,
-            name: name.trim(),
+            name,
             roomId: roomId || null,
             responsibleId: responsibleId || null,
             attributes: baseAttributes || {},
-            status: "active",
-            qrCode,
+            status: "active"
           })
           .returning();
         
-        items.push(item);
+        // Теперь у нас есть ID, генерируем QR-код
+        const qrCode = await generateEquipmentQRCode(item.id);
+        
+        // Обновляем запись с QR-кодом
+        await tx
+          .update(equipment)
+          .set({ qrCode })
+          .where(eq(equipment.id, item.id));
+        
+        items.push({ ...item, qrCode });
       }
 
       return { lot, items };

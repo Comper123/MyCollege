@@ -65,3 +65,56 @@
     background: #475569;
   }
 }
+
+/* Для правильной работы модальных окон */
+.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+/* Для сайдбара */
+aside {
+  overscroll-behavior: contain;
+}
+
+/* Для основного контента */
+main {
+  overscroll-behavior: contain;
+}
+
+/* Кастомный скроллбар */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: #334155 #1e293b;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+}

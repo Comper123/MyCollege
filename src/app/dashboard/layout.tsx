@@ -127,50 +127,35 @@ interface NavItemProps {
 function NavItem({ item, user, onNavigate }: NavItemProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isManuallyOpen, setIsManuallyOpen] = useState(false);
 
-  // Вычисляем, имеет ли пользователь доступ
   const hasAccess = !item.accessRoles || (user?.role && item.accessRoles.includes(user.role));
   
-  // Формируем полный путь с query параметрами
   const fullHref = item.query ? `${item.href}${item.query}` : item.href;
   
-  // Проверка активности
   const isActive = item.exact 
     ? pathname === item.href
     : pathname.startsWith(item.href);
 
-  // Проверка активности для раскрытия подменю
   const hasActiveSub = item.subNavs?.some(sub => 
     pathname.startsWith(sub.href)
   );
 
-  
-
-  useEffect(() => {
-    const setActive = (hasActiveSub: boolean | undefined) => {
-      if (hasActiveSub) {
-        setIsOpen(true);
-      }
-    }
-    setActive(hasActiveSub)
-  }, [hasActiveSub]);
+  const isOpen = hasActiveSub || isManuallyOpen;
 
   const handleClick = () => {
     if (item.subNavs) {
-      setIsOpen(!isOpen);
+      setIsManuallyOpen(!isManuallyOpen);
     } else {
       router.push(fullHref);
       onNavigate?.();
     }
   };
 
-  // Если нет доступа - не показываем пункт меню
   if (!hasAccess) {
     return null;
   }
 
-  // Рендер подменю
   if (item.subNavs) {
     return (
       <div className="flex flex-col w-full">
@@ -185,11 +170,7 @@ function NavItem({ item, user, onNavigate }: NavItemProps) {
           <span className="shrink-0">{item.icon}</span>
           <span className="flex-1 text-left">{item.label}</span>
           <span className="shrink-0">
-            {isOpen ? (
-              <ChevronDown strokeWidth={1.5} size={16} />
-            ) : (
-              <ChevronRight strokeWidth={1.5} size={16} />
-            )}
+            {isOpen ? <ChevronDown strokeWidth={1.5} size={16} /> : <ChevronRight strokeWidth={1.5} size={16} />}
           </span>
         </button>
         
@@ -226,14 +207,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Проверка на мобильное устройство
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      } else {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
         setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
       }
     };
     
@@ -241,6 +222,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Блокируем скролл body при открытом мобильном меню
+  useEffect(() => {
+    if (isMobile && isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, isSidebarOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -254,82 +247,87 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-[#0c0b18] overflow-hidden">
-      {/* Мобильный оверлей */}
-      {isMobile && isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar - фиксированная высота 100vh с прокруткой */}
-      <aside
-        className={`fixed md:relative z-50 shrink-0 w-64 flex flex-col bg-white dark:bg-[#0f0e1c] border-r border-gray-200 dark:border-white/10 transition-all duration-300 ${
-          isSidebarOpen ? "left-0" : "-left-64 md:left-0 md:w-20"
-        } h-full`}
-      >
-        {/* Логотип в сайдбаре - фиксированная часть */}
-        {isMobile && (
-        <div className="shrink-0 p-4 border-b border-gray-200 dark:border-white/10">
-          <div className={`flex items-center gap-2.5 font-unbounded font-bold ${!isSidebarOpen && !isMobile ? "justify-center" : ""}`}>
-            <div className="w-8 h-8 bg-[#603EF9] rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0">
-              М
-            </div>
-            {(isSidebarOpen || isMobile) && (
-              <span className="text-gray-900 dark:text-white text-sm whitespace-nowrap">
-                Мой ПТК
-              </span>
-            )}
-          </div>
-        </div>
+    <div className="flex flex-col h-[90vh] bg-gray-50 dark:bg-[#0c0b18]">
+      {/* Основной контент с сайдбаром */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Мобильный оверлей */}
+        {isMobile && isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsSidebarOpen(false)}
+          />
         )}
-        {/* Навигация - скроллируемая часть */}
-        <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1 custom-scrollbar">
-          {navItems.map((item, i) => (
-            <NavItem key={i} item={item} user={user as SelectUser} onNavigate={handleNavigate} />
-          ))}
-        </nav>
 
-        {/* Нижняя часть сайдбара - фиксированная */}
-        <div className="shrink-0 p-2 border-t border-gray-200 dark:border-white/10 flex flex-col gap-1">
-          <Link
-            href="/dashboard/settings"
-            onClick={handleNavigate}
-            className={`flex items-center gap-2.5 rounded-lg text-sm w-full px-4 py-2.5 transition-all text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white ${
-              !isSidebarOpen && !isMobile ? "justify-center" : ""
-            }`}
-          >
-            <Settings strokeWidth={1.5} size={18} className="shrink-0" />
-            {(isSidebarOpen || isMobile) && <span>Настройки</span>}
-          </Link>
-          
-          <button
-            onClick={handleLogout}
-            className={`flex items-center gap-2.5 rounded-lg text-sm w-full px-4 py-2.5 transition-all text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 ${
-              !isSidebarOpen && !isMobile ? "justify-center" : ""
-            }`}
-          >
-            <LogOut strokeWidth={1.5} size={18} className="shrink-0" />
-            {(isSidebarOpen || isMobile) && <span>Выйти</span>}
-          </button>
-        </div>
-      </aside>
+        {/* Sidebar - с правильным позиционированием */}
+        <aside
+          className={`shrink-0 w-64 flex flex-col bg-white dark:bg-[#0f0e1c] border-r border-gray-200 dark:border-white/10 transition-all duration-300 ${
+            isMobile 
+              ? `fixed top-0 bottom-0 z-50 ${isSidebarOpen ? "left-0" : "-left-64"}`
+              : "relative"
+          }`}
+          style={{ height: "90vh" }}
+        >
+          {/* Логотип в сайдбаре (только для мобильных) */}
+          {isMobile && (
+            <div className="shrink-0 p-4 border-b border-gray-200 dark:border-white/10">
+              <div className="flex items-center gap-2.5 font-unbounded font-bold">
+                <div className="w-8 h-8 bg-[#603EF9] rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0">
+                  М
+                </div>
+                <span className="text-gray-900 dark:text-white text-sm whitespace-nowrap">
+                  Мой ПТК
+                </span>
+              </div>
+            </div>
+          )}
 
-      {/* Кнопка бургер-меню для мобильных */}
-      <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed bottom-4 right-4 z-50 md:hidden p-3 bg-[#603EF9] text-white rounded-full shadow-lg"
-      >
-        {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+          {/* Навигация с собственной прокруткой */}
+          <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
+            {navItems.map((item, i) => (
+              <NavItem key={i} item={item} user={user as SelectUser} onNavigate={handleNavigate} />
+            ))}
+          </nav>
 
-      {/* Основной контент - с прокруткой */}
-      <main className="flex-1 overflow-y-auto h-full">
-        <div className="p-4 md:p-6">
-          {children}
-        </div>
-      </main>
+          {/* Нижняя часть сайдбара */}
+          <div className="shrink-0 p-2 border-t border-gray-200 dark:border-white/10 flex flex-col gap-1">
+            <Link
+              href="/dashboard/settings"
+              onClick={handleNavigate}
+              className={`flex items-center gap-2.5 rounded-lg text-sm w-full px-4 py-2.5 transition-all text-gray-600 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white ${
+                !isSidebarOpen && !isMobile ? "justify-center" : ""
+              }`}
+            >
+              <Settings strokeWidth={1.5} size={18} className="shrink-0" />
+              {(isSidebarOpen || isMobile) && <span>Настройки</span>}
+            </Link>
+            
+            <button
+              onClick={handleLogout}
+              className={`flex items-center gap-2.5 rounded-lg text-sm w-full px-4 py-2.5 transition-all text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 ${
+                !isSidebarOpen && !isMobile ? "justify-center" : ""
+              }`}
+            >
+              <LogOut strokeWidth={1.5} size={18} className="shrink-0" />
+              {(isSidebarOpen || isMobile) && <span>Выйти</span>}
+            </button>
+          </div>
+        </aside>
+
+        {/* Кнопка бургер-меню для мобильных */}
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="fixed bottom-4 right-4 z-50 md:hidden p-3 bg-[#603EF9] text-white rounded-full shadow-lg"
+        >
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+
+        {/* Основной контент */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 md:p-6">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

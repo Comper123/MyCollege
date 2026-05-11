@@ -240,7 +240,7 @@ export default function RoomDetailPage() {
               <Printer size={14} />
               Печать
             </Button>
-            <ProtectedBlock allowedRoles={["admin"]}>
+            <ProtectedBlock allowedRoles={["admin"]} isHide>
               <Button variant="danger" size="sm" onClick={() => setIsDeleteModalOpen(true)}>
                 <Trash size={14} />
                 Удалить

@@ -416,7 +416,7 @@ export default function RoomsPageContent() {
                     Сбросить фильтры
                   </Button>
                 ) : !isMy && (
-                  <ProtectedBlock allowedRoles={["admin"]}>
+                  <ProtectedBlock allowedRoles={["admin"]} isHide>
                     <Button onClick={() => setIsCreateRoomOpen(true)}>
                       <Plus size={16} />
                       Добавить кабинет

@@ -3,23 +3,12 @@
 import PublicHeader from "./PublicHeader";
 import PrivateHeader from "./PrivateHeader";
 import { useAuth } from "@/context/AuthContext";
-import { useState, useEffect } from "react";
 
 export default function ConditionalHeader() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const [showHeader, setShowHeader] = useState<"public" | "private" | null>(null);
-
-  useEffect(() => {
-    const setShown = () => {
-      if (!isLoading) {
-        setShowHeader(isAuthenticated ? "private" : "public");
-      }
-    }
-    setShown();
-  }, [isAuthenticated, isLoading]);
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Показываем заглушку во время загрузки
-  if (showHeader === null) {
+  if (isLoading) {
     return (
       <nav className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 md:px-8 bg-white/80 dark:bg-[#0c0b18]/80 backdrop-blur-md border-b border-gray-200 dark:border-white/10">
         <div className="flex items-center gap-2.5 font-unbounded text-base md:text-lg font-bold">
@@ -31,5 +20,5 @@ export default function ConditionalHeader() {
     );
   }
 
-  return showHeader === "private" ? <PrivateHeader /> : <PublicHeader />;
+  return isAuthenticated ? <PrivateHeader /> : <PublicHeader />;
 }
