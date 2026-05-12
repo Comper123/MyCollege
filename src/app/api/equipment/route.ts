@@ -4,7 +4,7 @@ import { equipment, EquipmentStatus } from "@/lib/db/schema";
 import { generateInventoryNumber, generateQRCode } from "@/lib/equipment/inventory";
 import { NextResponse } from "next/server";
 import { eq, desc, and, ilike } from "drizzle-orm";
-import { generateEquipmentQRCode } from "@/lib/equipment/qrcode";
+import { extractQRFromBase64, generateEquipmentQRCode, parseQRCodeData } from "@/lib/equipment/qrcode";
 
 
 export const GET = withAuth(async (req, ctx, user) => {
@@ -76,10 +76,12 @@ export const POST = withAuth(async (req, ctx, user) => {
       notes: notes || null,
     })
     .returning();
+    
   console.log("New equipment ID:", newEquipment.id);
 
   // Генерируем QR-код на основе ID
   const qrCode = await generateEquipmentQRCode(newEquipment.id);
+  
   // Обновляем запись
   await db
     .update(equipment)

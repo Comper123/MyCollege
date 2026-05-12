@@ -1,7 +1,7 @@
 import { withAuth } from "@/lib/auth/withAuth";
 import { db } from "@/lib/db/db";
 import { equipment } from "@/lib/db/schema/equipment";
-import { generateEquipmentQRCode } from "@/lib/equipment/qrcode";
+import { generateEquipmentQRCode, parseQRCodeData } from "@/lib/equipment/qrcode";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -19,6 +19,7 @@ export const POST = withAuth(async (req, ctx, user) => {
   
   // Генерируем новый QR-код
   const qrCode = await generateEquipmentQRCode(item.id);
+  console.log(parseQRCodeData(qrCode));
   
   // Обновляем запись
   await db.update(equipment)

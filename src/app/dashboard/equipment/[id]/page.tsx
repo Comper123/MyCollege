@@ -40,6 +40,7 @@ import { formatDateTime } from "@/utils/datetime/dateFormatter";
 import RequestModal from "@/components/pages/dashboard/requests/RequestModal";
 import EquipmentRequests from "@/components/pages/dashboard/equipment/EquipmentRequest";
 import EquipmentMoveModal from "@/components/pages/dashboard/equipment/EquipmentMoveModal";
+import QRDisplay from "@/components/pages/dashboard/equipment/QRDisplay";
 
 interface MovementWithDetails extends EquipmentMovement {
   fromRoom: { number: string } | null;
@@ -341,18 +342,6 @@ export default function EquipmentDetailPage() {
                 )}
               </div>
             </div>
-            {equipment.qrCode && (
-              <div 
-                className="print:hidden p-2 bg-white dark:bg-gray-800 rounded-xl border cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setIsQRModalOpen(true)}
-              >
-                <img 
-                  src={equipment.qrCode} 
-                  alt="QR Code" 
-                  className="w-20 h-20"
-                />
-              </div>
-            )}
           </div>
         </div>
 
@@ -462,6 +451,17 @@ export default function EquipmentDetailPage() {
 
           {/* Правая колонка - 1/3 */}
           <div className="space-y-6">
+            <div className="border rounded-xl p-5 bg-white dark:bg-gray-900/30">
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <QrCode size={18} className="text-indigo-500" />
+                QR-код
+              </h2>
+              <QRDisplay 
+                equipmentId={equipment.id}
+                inventoryNumber={equipment.inventoryNumber}
+                name={equipment.name}
+              />
+            </div>
             {/* Местоположение */}
             <div className="border rounded-xl p-5 bg-white dark:bg-gray-900/30">
               <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -663,9 +663,9 @@ export default function EquipmentDetailPage() {
       <QRCodeModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
-        inventoryNumber={equipment.inventoryNumber}
-        qrCode={equipment.qrCode}
+        equipmentId={equipment.id}
         name={equipment.name}
+        inventoryNumber={equipment.inventoryNumber}
       />
     </main>
   );

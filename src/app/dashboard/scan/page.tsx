@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Block } from "@/components/blocks/Block";
 import { Camera, Scan, Loader2, AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
+import { parseQRCodeData } from "@/lib/equipment/qrcode";
 
 export default function ScanPage() {
   const router = useRouter();
 
-  // Состояния
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,25 +17,9 @@ export default function ScanPage() {
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>("");
   const [manualInput, setManualInput] = useState("");
-  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
-  
-  const scannerRef = useRef<any>(null);
-  const isScanningRef = useRef(false); // синхронный флаг для колбэков
 
-  // Добавьте эту функцию в компонент
-  const parseQRData = (decodedText: string): string | null => {
-    try {
-      const data = JSON.parse(decodedText);
-      if (data.type === "equipment" && data.version === 1 && data.id) {
-        return data.id;
-      }
-      return null;
-    } catch {
-      // Старый формат - ищем инвентарный номер
-      const invMatch = decodedText.match(/INV-\d{4}-\d+/);
-      return invMatch ? invMatch[0] : null;
-    }
-  };
+  const scannerRef = useRef<any>(null);
+  const isScanningRef = useRef(false);
 
   // Очистка сканера
   const cleanupScanner = useCallback(async () => {
@@ -45,27 +29,20 @@ export default function ScanPage() {
           await scannerRef.current.stop();
         }
         await scannerRef.current.clear();
-      } catch (_) {
-        // Игнорируем ошибки при очистке
-      }
+      } catch (_) {}
       scannerRef.current = null;
     }
     isScanningRef.current = false;
     setIsScanning(false);
   }, []);
 
-  // Очистка при размонтировании
   useEffect(() => {
-    return () => {
-      cleanupScanner();
-    };
+    return () => { cleanupScanner(); };
   }, [cleanupScanner]);
 
-  // Запрос разрешения и получение списка камер
+  // Запрос разрешения камеры
   const requestPermissionAndCameras = useCallback(async () => {
-    setIsRequestingPermission(true);
     setError(null);
-    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       stream.getTracks().forEach(t => t.stop());
@@ -74,39 +51,45 @@ export default function ScanPage() {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(d => d.kind === "videoinput");
       setCameras(videoDevices);
-      if (videoDevices.length > 0) {
-        setSelectedCameraId(videoDevices[0].deviceId);
-      }
+      if (videoDevices.length > 0) setSelectedCameraId(videoDevices[0].deviceId);
       return true;
     } catch (err: any) {
       setPermissionGranted(false);
-      
-      if (err.name === "NotAllowedError") {
-        setError("Доступ к камере запрещён. Разрешите доступ в настройках браузера.");
-      } else if (err.name === "NotFoundError") {
-        setError("Камера не обнаружена на вашем устройстве.");
-      } else {
-        setError("Не удалось получить доступ к камере.");
-      }
+      setError(
+        err.name === "NotFoundError"
+          ? "Камера не обнаружена на устройстве."
+          : "Доступ к камере запрещён. Разрешите в настройках браузера."
+      );
       return false;
-    } finally {
-      setIsRequestingPermission(false);
     }
   }, []);
 
-  useEffect(() => {
-    requestPermissionAndCameras();
-  }, [requestPermissionAndCameras]);
+  useEffect(() => { requestPermissionAndCameras(); }, [requestPermissionAndCameras]);
 
-  // Поиск оборудования по инвентарному номеру
+  // Поиск оборудования через ваши утилиты parseQRCodeData
   const searchEquipment = useCallback(async (rawText: string) => {
     setIsSearching(true);
     setError(null);
 
     // Парсим QR-код
-    const equipmentIdOrInv = parseQRData(rawText);
+    let equipmentId: string | null = null;
+    let inventoryNumber: string | null = null;
     
-    if (!equipmentIdOrInv) {
+    try {
+      const data = JSON.parse(rawText);
+      if (data.type === "equipment" && data.version === 1) {
+        equipmentId = data.id;
+        inventoryNumber = data.inventoryNumber;
+      }
+    } catch {
+      // Не JSON - ищем инвентарный номер
+      const invMatch = rawText.match(/INV-\d{4}-\d+/);
+      if (invMatch) {
+        inventoryNumber = invMatch[0];
+      }
+    }
+    
+    if (!equipmentId && !inventoryNumber) {
       setError("Неверный формат QR-кода");
       setIsSearching(false);
       return;
@@ -114,11 +97,10 @@ export default function ScanPage() {
 
     try {
       let url: string;
-      // Если это UUID (36 символов с дефисами) - ищем по ID
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(equipmentIdOrInv)) {
-        url = `/api/equipment/${equipmentIdOrInv}`;
+      if (equipmentId) {
+        url = `/api/equipment/${equipmentId}`;
       } else {
-        url = `/api/equipment/search?inventoryNumber=${encodeURIComponent(equipmentIdOrInv)}`;
+        url = `/api/equipment/search?inventoryNumber=${encodeURIComponent(inventoryNumber!)}`;
       }
       
       const resp = await fetch(url);
@@ -126,12 +108,10 @@ export default function ScanPage() {
         const equipment = await resp.json();
         router.push(`/dashboard/equipment/${equipment.id}`);
       } else {
-        setError(`Оборудование не найдено`);
-        setScanResult(null);
+        setError("Оборудование не найдено");
       }
-    } catch (_) {
+    } catch {
       setError("Ошибка соединения с сервером");
-      setScanResult(null);
     } finally {
       setIsSearching(false);
     }
@@ -147,12 +127,10 @@ export default function ScanPage() {
       if (!ok) return;
     }
 
-    // Даём React время отрендерить контейнер
     await new Promise(r => setTimeout(r, 100));
 
-    const container = document.getElementById("qr-scanner");
-    if (!container) {
-      setError("Не удалось найти контейнер для сканера");
+    if (!document.getElementById("qr-scanner")) {
+      setError("Не удалось найти контейнер сканера.");
       return;
     }
 
@@ -165,50 +143,35 @@ export default function ScanPage() {
       const scanner = new Html5Qrcode("qr-scanner");
       scannerRef.current = scanner;
 
-      const cameraConstraint = selectedCameraId
-        ? selectedCameraId
-        : { facingMode: "environment" };
-
       await scanner.start(
-        cameraConstraint,
-        {
-          fps: 10,
-          qrbox: { width: 240, height: 240 },
-          aspectRatio: 1,
-        },
+        selectedCameraId || { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1 },
         async (decodedText: string) => {
-          // Срабатывает только один раз
+          // Защита от повторных срабатываний на каждом кадре
           if (!isScanningRef.current) return;
           isScanningRef.current = false;
 
           setScanResult(decodedText);
-          await cleanupScanner();
           await searchEquipment(decodedText);
+
+          await cleanupScanner();
         },
-        (_: string) => {
-          // ошибки кадра — норма, игнорируем
-        }
+        (_: string) => { /* ошибки кадра — норма */ }
       );
     } catch (err: any) {
       isScanningRef.current = false;
       setIsScanning(false);
       scannerRef.current = null;
 
-      const name = err?.name ?? "";
-      if (name === "NotAllowedError") {
-        setPermissionGranted(false);
-        setError("Доступ к камере запрещён. Разрешите в настройках браузера и попробуйте снова.");
-      } else if (name === "NotFoundError") {
-        setError("Камера не обнаружена. Проверьте подключение устройства.");
-      } else if (name === "NotReadableError") {
-        setError("Камера занята другим приложением. Закройте его и попробуйте снова.");
-      } else {
-        setError(`Не удалось запустить сканер: ${err?.message ?? "неизвестная ошибка"}`);
-      }
+      const msgs: Record<string, string> = {
+        NotAllowedError: "Доступ к камере запрещён. Разрешите в настройках браузера.",
+        NotFoundError: "Камера не обнаружена.",
+        NotReadableError: "Камера занята другим приложением.",
+      };
+      setError(msgs[err?.name] ?? `Не удалось запустить сканер: ${err?.message ?? "неизвестная ошибка"}`);
     }
   }, [permissionGranted, selectedCameraId, cleanupScanner, searchEquipment, requestPermissionAndCameras]);
 
-  // Ручной поиск
   const handleManualSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualInput.trim()) return;
@@ -234,11 +197,11 @@ export default function ScanPage() {
               Сканирование QR-кода
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Наведите камеру на QR-код оборудования для быстрого перехода к его странице
+              Наведите камеру на QR-код оборудования
             </p>
           </div>
 
-          {/* Выбор камеры (если их несколько) */}
+          {/* Выбор камеры */}
           {cameras.length > 1 && !isScanning && (
             <div className="mb-4">
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
@@ -258,47 +221,38 @@ export default function ScanPage() {
             </div>
           )}
 
-          {/* Контейнер для видео сканера — рендерится всегда когда isScanning */}
+          {/* Контейнер сканера (всегда в DOM, скрыт через h-0) */}
           <div
             className={`rounded-2xl overflow-hidden border-2 transition-all mb-4 ${
               isScanning
                 ? "border-indigo-500 shadow-lg shadow-indigo-500/10"
-                : "border-transparent h-0 overflow-hidden"
+                : "border-transparent h-0"
             }`}
           >
-            <div
-              id="qr-scanner"
-              className="w-full bg-black"
-              style={{ aspectRatio: "1/1" }}
-            />
+            <div id="qr-scanner" className="w-full bg-black" style={{ aspectRatio: "1/1" }} />
           </div>
 
-          {/* Результат / статус */}
+          {/* Статус: найдено */}
           {scanResult && (
             <div className="mb-4 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 flex items-start gap-3">
               <CheckCircle size={18} className="text-green-600 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                  QR-код распознан
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-500 mt-0.5 truncate">
-                  {scanResult}
-                </p>
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">QR-код распознан</p>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-0.5 truncate">{scanResult}</p>
               </div>
               {isSearching && <Loader2 size={16} className="animate-spin text-green-600 shrink-0 mt-0.5" />}
             </div>
           )}
 
+          {/* Статус: ошибка */}
           {error && (
             <div className="mb-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-start gap-3">
               <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-              </div>
+              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
             </div>
           )}
 
-          {/* Кнопки управления */}
+          {/* Кнопки */}
           <div className="flex flex-col gap-2">
             {!isScanning ? (
               <button
@@ -321,11 +275,11 @@ export default function ScanPage() {
 
             {(error || scanResult) && !isScanning && (
               <button
-                onClick={() => { reset(); }}
+                onClick={reset}
                 className="w-full flex items-center justify-center gap-2 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-white/60 py-2.5 px-5 rounded-xl transition-colors text-sm"
               >
                 <RefreshCw size={14} />
-                Сбросить
+                Сканировать снова
               </button>
             )}
           </div>
@@ -357,10 +311,10 @@ export default function ScanPage() {
           {/* Подсказки */}
           <div className="mt-6 p-4 bg-gray-50 dark:bg-white/5 rounded-xl text-xs text-gray-500 dark:text-gray-400 space-y-1">
             <p className="font-medium text-gray-600 dark:text-gray-300 mb-2">Если камера не работает:</p>
-            <p>• Убедитесь, что сайт открыт по HTTPS или на localhost</p>
+            <p>• Сайт должен быть открыт по HTTPS или на localhost</p>
             <p>• Разрешите доступ к камере в настройках браузера</p>
-            <p>• Попробуйте Chrome, Edge или Firefox последней версии</p>
             <p>• Проверьте, что камера не занята другим приложением</p>
+            <p>• Используйте Chrome, Edge или Firefox последней версии</p>
           </div>
         </div>
       </Block>

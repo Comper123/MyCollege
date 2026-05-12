@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Download, Printer, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Printer, X, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
+import QRCode from "qrcode";
 
 interface QRModalProps {
   isOpen: boolean;
@@ -14,39 +14,75 @@ interface QRModalProps {
 }
 
 export default function QRModal({ isOpen, onClose, equipmentId, name, inventoryNumber }: QRModalProps) {
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [qrImageUrl, setQrImageUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  // Генерируем QR-код при открытии модалки
+  useEffect(() => {
+    if (!isOpen) return;
 
-  // Данные для QR-кода
-  const qrData = JSON.stringify({
-    type: "equipment",
-    version: 1,
-    id: equipmentId,
-  });
+    const generateQR = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const qrData = JSON.stringify({
+          type: "equipment",
+          version: 1,
+          id: equipmentId,
+          inventoryNumber: inventoryNumber,
+        });
+
+        const url = await QRCode.toDataURL(qrData, {
+          width: 400,
+          margin: 2,
+          errorCorrectionLevel: "H", // Высокий уровень для лучшего распознавания
+          color: {
+            dark: "#000000",
+            light: "#ffffff",
+          },
+        });
+
+        setQrImageUrl(url);
+      } catch (err) {
+        console.error("QR generation failed:", err);
+        setError("Не удалось сгенерировать QR-код");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    generateQR();
+  }, [isOpen, equipmentId, inventoryNumber]);
 
   const handleDownload = async () => {
-    setIsDownloading(true);
     try {
-      const QRCode = (await import("qrcode")).default;
-      const url = await QRCode.toDataURL(qrData, {
-        width: 400,
-        margin: 2,
-        errorCorrectionLevel: "M",
+      const qrData = JSON.stringify({
+        type: "equipment",
+        version: 1,
+        id: equipmentId,
+        inventoryNumber: inventoryNumber,
       });
-      
+
+      const url = await QRCode.toDataURL(qrData, {
+        width: 500,
+        margin: 2,
+        errorCorrectionLevel: "H",
+      });
+
       const link = document.createElement("a");
       link.download = `qr-${inventoryNumber}.png`;
       link.href = url;
       link.click();
-    } catch (error) {
-      console.error("Error downloading QR:", error);
-    } finally {
-      setIsDownloading(false);
+    } catch (err) {
+      console.error("Download failed:", err);
     }
   };
 
   const handlePrint = () => {
+    if (!qrImageUrl) return;
+
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
@@ -55,28 +91,73 @@ export default function QRModal({ isOpen, onClose, equipmentId, name, inventoryN
       <html>
         <head>
           <title>QR-код: ${inventoryNumber}</title>
+          <meta charset="UTF-8">
           <style>
-            body { display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: system-ui; }
-            .container { text-align: center; }
-            .qr { margin: 20px; }
-            .inv { font-family: monospace; margin-top: 10px; }
-            .name { font-size: 12px; color: #666; }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              font-family: system-ui, -apple-system, sans-serif;
+              background: white;
+            }
+            .container {
+              text-align: center;
+              padding: 20px;
+            }
+            .qr-wrapper {
+              background: white;
+              padding: 20px;
+              border: 1px solid #e5e7eb;
+              border-radius: 16px;
+              margin-bottom: 20px;
+            }
+            .qr-image {
+              width: 250px;
+              height: 250px;
+              display: block;
+              margin: 0 auto;
+            }
+            .inventory-number {
+              font-family: monospace;
+              font-size: 14px;
+              font-weight: 600;
+              color: #1f2937;
+              margin-bottom: 8px;
+            }
+            .equipment-name {
+              font-size: 12px;
+              color: #6b7280;
+            }
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              .no-print {
+                display: none;
+              }
+            }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="qr" id="qr"></div>
-            <div class="inv">${inventoryNumber}</div>
-            <div class="name">${name}</div>
+            <div class="qr-wrapper">
+              <img src="${qrImageUrl}" alt="QR Code" class="qr-image" />
+            </div>
+            <div class="inventory-number">${inventoryNumber}</div>
+            <div class="equipment-name">${name}</div>
           </div>
-          <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
           <script>
-            new QRCode(document.getElementById("qr"), { 
-              text: '${qrData.replace(/'/g, "\\'")}', 
-              width: 250, 
-              height: 250 
-            });
-            setTimeout(() => window.print(), 500);
+            setTimeout(() => {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            }, 300);
           </script>
         </body>
       </html>
@@ -84,48 +165,73 @@ export default function QRModal({ isOpen, onClose, equipmentId, name, inventoryN
     printWindow.document.close();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             QR-код оборудования
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
-            <X size={20} />
+            <X size={20} className="text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         <div className="flex flex-col items-center">
-          <div className="bg-white p-4 rounded-xl border">
-            <QRCodeSVG
-              value={qrData}
-              size={250}
-              bgColor="#ffffff"
-              fgColor="#000000"
-              level="M"
-            />
+          {/* Контейнер с QR-кодом */}
+          <div className="bg-white p-4 rounded-xl border shadow-sm">
+            {isLoading ? (
+              <div className="w-[250px] h-[250px] flex flex-col items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-indigo-500 mb-3" />
+                <p className="text-sm text-gray-500">Генерация QR-кода...</p>
+              </div>
+            ) : error ? (
+              <div className="w-[250px] h-[250px] flex flex-col items-center justify-center">
+                <div className="text-red-500 text-center">
+                  <p className="text-sm">{error}</p>
+                </div>
+              </div>
+            ) : (
+              <img 
+                src={qrImageUrl} 
+                alt="QR Code" 
+                width={250} 
+                height={250} 
+                className="w-[250px] h-[250px]"
+              />
+            )}
           </div>
           
-          <p className="font-mono text-sm mt-4">{inventoryNumber}</p>
-          <p className="text-sm text-gray-500">{name}</p>
+          {/* Информация об оборудовании */}
+          <div className="text-center mt-4">
+            <p className="font-mono text-sm font-medium text-gray-900 dark:text-white">
+              {inventoryNumber}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {name}
+            </p>
+          </div>
           
+          {/* Кнопки действий */}
           <div className="flex gap-3 mt-6 w-full">
             <Button
               variant="secondary"
               onClick={handleDownload}
-              disabled={isDownloading}
+              disabled={isLoading || !!error}
               className="flex-1"
             >
               <Download size={16} />
-              {isDownloading ? "Загрузка..." : "Скачать"}
+              Скачать
             </Button>
             <Button
               variant="secondary"
               onClick={handlePrint}
+              disabled={isLoading || !!error}
               className="flex-1"
             >
               <Printer size={16} />

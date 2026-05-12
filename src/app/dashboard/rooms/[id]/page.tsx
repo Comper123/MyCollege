@@ -403,7 +403,6 @@ export default function RoomDetailPage() {
                           id: item.id,
                           inventoryNumber: item.inventoryNumber,
                           name: item.name,
-                          qrCode: item.qrCode,
                         }))}
                         title={`Кабинет ${room.number}`}
                       />

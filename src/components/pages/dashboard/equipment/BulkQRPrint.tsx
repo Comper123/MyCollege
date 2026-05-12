@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Button from "@/components/ui/Button";
-import { Printer, Grid, List, ChevronDown } from "lucide-react";
+import { Printer, Loader2 } from "lucide-react";
+import QRCode from "qrcode";
 
 interface Equipment {
   id: string;
   inventoryNumber: string;
   name: string;
-  qrCode?: string | null;
 }
 
 interface BulkQRPrintProps {
@@ -16,26 +16,88 @@ interface BulkQRPrintProps {
   title: string;
 }
 
-export default function SimpleBulkQRPrint({ equipment, title }: BulkQRPrintProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [layout, setLayout] = useState<"grid" | "list">("grid");
-  const dropdownRef = useRef<HTMLDivElement>(null);
+export default function BulkQRPrint({ equipment, title }: BulkQRPrintProps) {
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [qrImages, setQrImages] = useState<Map<string, string>>(new Map());
+  const [generatedCount, setGeneratedCount] = useState(0);
+  const [allGenerated, setAllGenerated] = useState(false);
+  const generationStarted = useRef(false);
 
-  // Закрываем dropdown при клике вне его
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+  const generateAllQRCodes = async () => {
+    setIsGenerating(true);
+    setGeneratedCount(0);
+    setAllGenerated(false);
+    
+    const newQrImages = new Map<string, string>();
+    
+    for (let i = 0; i < equipment.length; i++) {
+      const item = equipment[i];
+      try {
+        const qrData = JSON.stringify({
+          type: "equipment",
+          version: 1,
+          id: item.id,
+          inventoryNumber: item.inventoryNumber,
+        });
+        
+        const url = await QRCode.toDataURL(qrData, {
+          width: 150,
+          margin: 1,
+          errorCorrectionLevel: "H",
+        });
+        
+        newQrImages.set(item.id, url);
+        setGeneratedCount(i + 1);
+      } catch (err) {
+        console.error(`Failed to generate QR for ${item.id}:`, err);
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    }
+    
+    setQrImages(newQrImages);
+    setAllGenerated(true);
+    setIsGenerating(false);
+  };
+
+  // Генерация всех QR-кодов - запускаем только один раз
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (equipment.length > 0 && qrImages.size === 0 && !generationStarted.current) {
+        generationStarted.current = true;
+        generateAllQRCodes();
+      }
+    })
+    return clearTimeout(timer);
+  }, [equipment.length]);
+
+  
 
   const handlePrint = () => {
-    setIsOpen(false);
+    if (!allGenerated) {
+      alert("Пожалуйста, подождите, QR-коды генерируются...");
+      return;
+    }
+    
+    setIsPrinting(true);
+    
     const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    if (!printWindow) {
+      setIsPrinting(false);
+      return;
+    }
+
+    const itemsHtml = equipment.map(item => {
+      const qrUrl = qrImages.get(item.id);
+      return `
+        <div class="qr-item">
+          <div class="qr-image">
+            ${qrUrl ? `<img src="${qrUrl}" alt="QR Code" />` : '<div class="qr-placeholder">Ошибка генерации</div>'}
+          </div>
+          <div class="inventory-number">${item.inventoryNumber}</div>
+          <div class="equipment-name">${item.name}</div>
+        </div>
+      `;
+    }).join('');
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -46,7 +108,7 @@ export default function SimpleBulkQRPrint({ equipment, title }: BulkQRPrintProps
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              font-family: system-ui, sans-serif;
+              font-family: system-ui, -apple-system, sans-serif;
               padding: 20px;
               background: white;
             }
@@ -56,153 +118,103 @@ export default function SimpleBulkQRPrint({ equipment, title }: BulkQRPrintProps
               padding-bottom: 20px;
               border-bottom: 2px solid #e5e7eb;
             }
-            .grid-layout {
+            .header h1 { font-size: 24px; margin-bottom: 8px; }
+            .header p { color: #6b7280; font-size: 14px; }
+            .grid {
               display: grid;
               grid-template-columns: repeat(4, 1fr);
               gap: 20px;
-            }
-            .list-layout {
-              display: flex;
-              flex-direction: column;
-              gap: 15px;
             }
             .qr-item {
               text-align: center;
               padding: 15px;
               border: 1px solid #e5e7eb;
-              border-radius: 8px;
+              border-radius: 12px;
               break-inside: avoid;
-            }
-            .list-layout .qr-item {
-              display: flex;
-              align-items: center;
-              gap: 20px;
-              text-align: left;
+              page-break-inside: avoid;
             }
             .qr-image {
-              width: 100px;
-              height: 100px;
-              object-fit: contain;
-              margin: 0 auto;
+              width: 120px;
+              height: 120px;
+              margin: 0 auto 10px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
-            .list-layout .qr-image {
-              margin: 0;
+            .qr-image img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
             }
             .qr-placeholder {
-              width: 100px;
-              height: 100px;
+              width: 120px;
+              height: 120px;
               background: #f3f4f6;
               display: flex;
               align-items: center;
               justify-content: center;
               border-radius: 8px;
-              margin: 0 auto;
-            }
-            .list-layout .qr-placeholder {
-              margin: 0;
+              color: #9ca3af;
+              font-size: 12px;
             }
             .inventory-number {
               font-family: monospace;
-              font-size: 12px;
+              font-size: 11px;
               font-weight: 600;
               margin-top: 8px;
             }
             .equipment-name {
-              font-size: 11px;
+              font-size: 10px;
               color: #6b7280;
+              margin-top: 4px;
             }
             @media print {
-              .page-break {
-                page-break-after: always;
+              .qr-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
               }
             }
           </style>
         </head>
         <body>
           <div class="header">
-            <h2>QR-коды: ${title}</h2>
-            <p>Всего: ${equipment.length} шт.</p>
+            <h1>QR-коды оборудования</h1>
+            <p>${title} • Всего: ${equipment.length} шт.</p>
           </div>
-          <div class="${layout === "grid" ? "grid-layout" : "list-layout"}">
-            ${equipment.map(item => `
-              <div class="qr-item">
-                ${item.qrCode ? `
-                  <img src="${item.qrCode}" class="qr-image" />
-                ` : `
-                  <div class="qr-placeholder">Нет QR</div>
-                `}
-                <div class="inventory-number">${item.inventoryNumber}</div>
-                <div class="equipment-name">${item.name}</div>
-              </div>
-            `).join('')}
+          <div class="grid">
+            ${itemsHtml}
           </div>
           <script>
-            window.onload = () => { setTimeout(() => window.print(), 500); }
+            setTimeout(() => {
+              window.print();
+              setTimeout(() => window.close(), 1000);
+            }, 500);
           </script>
         </body>
       </html>
     `);
+    
     printWindow.document.close();
+    setIsPrinting(false);
   };
 
   if (equipment.length === 0) return null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <Button 
-        variant="secondary" 
-        size="sm" 
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1"
-      >
+    <Button 
+      variant="secondary" 
+      size="sm" 
+      onClick={handlePrint}
+      disabled={isPrinting || isGenerating}
+    >
+      {isPrinting ? (
+        <Loader2 size={14} className="animate-spin" />
+      ) : isGenerating ? (
+        <Loader2 size={14} className="animate-spin" />
+      ) : (
         <Printer size={14} />
-        QR-коды ({equipment.length})
-        <ChevronDown size={12} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </Button>
-
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-          <div className="p-3 space-y-3">
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Формат печати</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setLayout("grid")}
-                  className={`flex-1 py-1.5 px-2 rounded text-sm flex items-center justify-center gap-1 ${
-                    layout === "grid"
-                      ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400"
-                      : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  <Grid size={14} />
-                  Сетка
-                </button>
-                <button
-                  onClick={() => setLayout("list")}
-                  className={`flex-1 py-1.5 px-2 rounded text-sm flex items-center justify-center gap-1 ${
-                    layout === "list"
-                      ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400"
-                      : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  <List size={14} />
-                  Список
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={handlePrint}
-                className="w-full py-2 px-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <Printer size={16} />
-                Печать {equipment.length} QR
-              </button>
-            </div>
-          </div>
-        </div>
       )}
-    </div>
+      {isGenerating ? `Генерация QR (${generatedCount}/${equipment.length})` : `Печать QR (${equipment.length})`}
+    </Button>
   );
 }
